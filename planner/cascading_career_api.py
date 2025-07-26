@@ -41,14 +41,11 @@ except Exception as e:
 
 # Enhanced Models
 class UserProfile(BaseModel):
-    current_role: str = Field(..., description="Current job title or position")
-    skills: str = Field(..., description="Comma-separated list of current skills")
-    interests: str = Field(..., description="Professional interests and passions")
+    interests_values: str = Field(..., description="Interests and values")
+    work_experience: str = Field(..., description="Work experience details")
+    circumstances: str = Field(..., description="Personal circumstances")
+    skills: str = Field(..., description="Skills and competencies")
     goals: str = Field(..., description="Career goals and aspirations")
-    financials: str = Field(..., description="Financial constraints and considerations")
-    circumstances: Optional[str] = Field(default="", description="Personal circumstances")
-    experience_years: Optional[int] = Field(default=0, description="Years of professional experience")
-    education_level: Optional[str] = Field(default="", description="Highest education level")
 
 class MilestoneUpdateRequest(BaseModel):
     user_thoughts: str = Field(..., description="User's thoughts, concerns, or desired changes in natural language")
@@ -111,14 +108,11 @@ class CascadingPlanManager:
         
         # Convert to dict for LLM processing
         user_data = {
-            "current_role": user_profile.current_role,
-            "skills": user_profile.skills,
-            "interests": user_profile.interests,
-            "goals": user_profile.goals,
-            "financials": user_profile.financials,
+            "interests_values": user_profile.interests_values,
+            "work_experience": user_profile.work_experience,
             "circumstances": user_profile.circumstances,
-            "experience_years": user_profile.experience_years,
-            "education_level": user_profile.education_level
+            "skills": user_profile.skills,
+            "goals": user_profile.goals
         }
         
         # Generate comprehensive plan using LLM
@@ -365,14 +359,11 @@ class CascadingPlanManager:
         Based on this user's profile, create a comprehensive career plan with specific, actionable milestones.
         
         USER PROFILE:
-        - Current Role: {user_data.get('current_role', 'Not specified')}
-        - Skills: {user_data.get('skills', 'Not specified')}
-        - Interests: {user_data.get('interests', 'Not specified')}
-        - Goals: {user_data.get('goals', 'Not specified')}
-        - Financial Situation: {user_data.get('financials', 'Not specified')}
+        - Interests & Values: {user_data.get('interests_values', 'Not specified')}
+        - Work Experience: {user_data.get('work_experience', 'Not specified')}
         - Circumstances: {user_data.get('circumstances', 'Not specified')}
-        - Experience: {user_data.get('experience_years', 0)} years
-        - Education: {user_data.get('education_level', 'Not specified')}
+        - Skills: {user_data.get('skills', 'Not specified')}
+        - Goals: {user_data.get('goals', 'Not specified')}
         
         Create a realistic career plan based ONLY on what the user wants (their goals and interests).
         
