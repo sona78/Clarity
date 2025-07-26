@@ -123,7 +123,65 @@ class LLMCareerPlanner:
                 market_data.append(f"Query: {query}\nResult: {result['snippet']}\n")
         
         return "\n".join(market_data)
-    
+
+    def generate_markdown_blurb(self, career_plan: CareerPlan) -> str:
+        """
+        Use OpenAI to turn the structured career plan data into a markdown blurb
+        with foresight, insights, and actionable advice, including headings and details.
+        """
+        # Prepare a summary of the plan for the LLM
+        plan_summary = {
+            "target_role": career_plan.target_role,
+            "target_industry": career_plan.target_industry,
+            "current_role": career_plan.current_role,
+            "plan_duration_months": career_plan.plan_duration_months,
+            "milestones": [
+                {
+                    "title": m.title,
+                    "description": m.description,
+                    "type": m.type.value if hasattr(m.type, "value") else str(m.type),
+                    "priority": m.priority.value if hasattr(m.priority, "value") else str(m.priority),
+                    "estimated_duration_weeks": m.estimated_duration_weeks,
+                    "success_criteria": m.success_criteria,
+                    "resources": m.resources,
+                    "prerequisites": m.prerequisites,
+                    "status": m.status
+                }
+                for m in career_plan.milestones
+            ],
+            "market_insights": career_plan.market_insights,
+            "created_date": career_plan.created_date
+        }
+
+        prompt = (
+            "You are a career coach and future-of-work expert. "
+            "Given the following structured career plan data, write a markdown-formatted blurb for the user. "
+            "The blurb should:\n"
+            "- Start with a motivating summary and outlook for the next 1-2 years in this career path.\n"
+            "- Highlight key milestones and what to expect at each stage, using markdown headings.\n"
+            "- Offer insights about the skills, market trends, and potential challenges ahead.\n"
+            "- Give actionable advice and encouragement, referencing the plan's details.\n"
+            "- Use markdown formatting (##, ###, bullet points, etc) for clarity and engagement.\n"
+            "Be concise but insightful, and make sure to include foresight about the industry and role.\n\n"
+            f"Structured Plan Data (JSON):\n{json.dumps(plan_summary, indent=2)}"
+        )
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are an expert career coach and future-of-work analyst."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=900
+            )
+            markdown_blurb = response.choices[0].message.content
+            return markdown_blurb
+        except Exception as e:
+            print(f"Failed to generate markdown blurb: {e}")
+            return "Could not generate summary at this time."
+
     def generate_career_plan_with_llm(self, user_data: Dict[str, Any], target_role: str, target_industry: str) -> CareerPlan:
         """Generate career plan using OpenAI LLM with market intelligence"""
         
@@ -149,13 +207,104 @@ class LLMCareerPlanner:
             
             # Parse LLM response into structured plan
             career_plan = self.parse_llm_response(llm_response, user_data, target_role, target_industry, market_intelligence)
-            
-            return career_plan
+
+            markdown = self.generate_markdown_blurb(career_plan)
+            return markdown
             
         except Exception as e:
             print(f"LLM generation failed: {e}")
             # Fallback to basic plan
             return self.create_fallback_plan(user_data, target_role, target_industry)
+    
+    def generate_career_plan_markdown(self, user_data: Dict[str, Any]) -> str:
+        """Generate career plan as markdown text using OpenAI LLM"""
+        
+        # Gather current market data
+        market_intelligence = self.gather_market_intelligence(target_role, target_industry)
+        
+        # Create prompt for markdown generation
+        prompt = f"""
+        Create a comprehensive career transition plan in markdown format for the following profile:
+        
+        **User Profile:**
+        - Interests & Values: {user_data.get('interests_values', '')}
+        - Work Experience: {user_data.get('work_experience', '')}
+        - Circumstances: {user_data.get('circumstances', '')}
+        - Skills: {user_data.get('skills', '')}
+        - Goals: {user_data.get('goals', '')}
+        
+        **Target Role:** {target_role}
+        **Target Industry:** {target_industry}
+        
+        **Market Intelligence:**
+        {json.dumps(market_intelligence, indent=2) if market_intelligence else "No market data available"}
+        
+        Generate a detailed markdown career transition plan with the following sections:
+        1. Executive Summary
+        2. Current State Analysis
+        3. Target Role Analysis
+        4. Skill Gap Analysis
+        5. Action Plan with Timeline (specific milestones)
+        6. Market Insights
+        7. Resources & Next Steps
+        
+        Use proper markdown formatting with headers, bullet points, tables where appropriate.
+        """
+        
+        try:
+            # Call OpenAI API
+            response = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are an expert career transition advisor. Generate detailed, actionable career transition plans in markdown format."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=3000
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            print(f"Error calling OpenAI API: {e}")
+            # Fallback markdown plan
+            return self.generate_fallback_markdown_plan(user_data, target_role, target_industry)
+    
+    def generate_fallback_markdown_plan(self, user_data: Dict[str, Any], target_role: str, target_industry: str) -> str:
+        """Generate a basic markdown plan when API fails"""
+        return f"""
+# Career Transition Plan: {target_role}
+
+## Executive Summary
+Transitioning from current role to **{target_role}** in the **{target_industry}** industry.
+
+## Current Profile
+- **Skills:** {user_data.get('skills', 'Not specified')}
+- **Goals:** {user_data.get('goals', 'Not specified')}
+- **Interests & Values:** {user_data.get('interests_values', 'Not specified')}
+
+## Action Plan
+1. **Skill Development** (Weeks 1-12)
+   - Identify key skills for {target_role}
+   - Enroll in relevant courses
+   
+2. **Portfolio Building** (Weeks 4-16)
+   - Create projects showcasing target skills
+   - Document work experience
+   
+3. **Networking** (Weeks 8-20)
+   - Connect with professionals in {target_industry}
+   - Attend industry events
+
+4. **Job Search** (Weeks 16-24)
+   - Apply to {target_role} positions
+   - Prepare for interviews
+
+## Next Steps
+- Review and refine this plan
+- Begin skill development activities
+- Set up tracking system for progress
+"""
     
     def create_planning_prompt(self, user_data: Dict[str, Any], target_role: str, target_industry: str, market_data: str) -> str:
         """Create comprehensive prompt for LLM plan generation"""
@@ -270,7 +419,7 @@ Format the response as JSON with this structure:
                 target_role=target_role,
                 target_industry=target_industry,
                 current_role=user_data.get('current_role', 'Current Position'),
-                plan_duration_months=9,
+                plan_duration_months=24,
                 milestones=milestones,
                 market_insights=parsed_data.get('market_analysis', {}),
                 created_date=datetime.now().isoformat(),

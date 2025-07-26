@@ -160,7 +160,7 @@ async def root():
         }
     }
 
-@app.post("/api/v1/generate-plan", response_model=CareerPlanResponse)
+@app.post("/api/v1/generate-plan")
 async def generate_career_plan(request: CareerPlanRequest):
     """
     Generate a comprehensive career transition plan using AI and real-time market data.
@@ -181,17 +181,14 @@ async def generate_career_plan(request: CareerPlanRequest):
             "goals": request.user_profile.goals
         }
         
-        # Generate plan using LLM
-        career_plan = planner.generate_career_plan_with_llm(
+        # Generate plan using LLM as markdown
+        markdown_plan = planner.generate_career_plan_markdown(
             user_data=user_data,
             target_role=request.target_role,
             target_industry=request.target_industry
         )
         
-        # Convert to response format
-        response = convert_career_plan_to_response(career_plan)
-        
-        return response
+        return {"markdown": markdown_plan}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate career plan: {str(e)}")
