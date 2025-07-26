@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Container, 
@@ -37,115 +37,169 @@ import PageNavigation from '../components/PageNavigation';
 import { CHAT_ROUTE } from "../App";
 import ReactMarkdown from 'react-markdown';
 
-const DEFAULT_MARKDOWN = `## Example Personalized Career Insights
-
-Welcome! You can use **Markdown** to write your personalized summary here.
-
----
-
-### Example
-
-- **Overview:**  
-  Based on your interests in technology and problem-solving, along with your background in business, you're well-positioned for a career transition into tech.
-
-- **Recommended Path:**  
-  \`Full-Stack Development → Data Analytics → Cloud Architecture\`
-
-- **Strengths:**  
-  - Analytical thinking  
-  - Business acumen  
-  - Problem-solving  
-  - Communication
-
-- **Timeline:**  
-  _24-30 months to senior level_
-
-- **Key Insights:**  
-  1. Your business background gives you an edge in understanding user requirements  
-  2. Focus on projects that combine your business knowledge with technical skills  
-  3. Consider specializing in fintech or business intelligence tools
-
-- **Immediate Next Steps:**  
-  1. Complete programming fundamentals in the next 4 weeks  
-  2. Start building a portfolio with business-focused projects  
-  3. Network with professionals in your target industry
-
----
-
-You can update this summary at any time.
-`;
-
 const Paths = () => {
   const [selectedStep, setSelectedStep] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const careerPathway = [
-    {
-      id: 1,
-      timeRange: "1 Month",
-      title: "Programming Fundamentals",
-      icon: Code,
-      color: "primary",
-      status: "completed",
-      shortDescription: "Learn basic programming concepts and syntax",
-      detailedDescription: "Master the fundamental concepts of programming including variables, data types, control structures, functions, and basic algorithms. This foundation is crucial for all future development work.",
-      skills: ["Variables & Data Types", "Control Structures", "Functions", "Basic Algorithms", "Problem Solving"],
-      deliverables: ["Complete 50+ coding exercises", "Build 3 small projects", "Pass fundamentals assessment"],
-      resources: ["Interactive coding tutorials", "Practice platforms", "Mentor support"]
-    },
-    {
-      id: 2,
-      timeRange: "6 Months",
-      title: "Web Development",
-      icon: TrendingUp,
-      color: "success",
-      status: "in_progress",
-      shortDescription: "Build modern web applications",
-      detailedDescription: "Develop expertise in frontend and backend web technologies. Learn to create responsive, interactive web applications using modern frameworks and best practices.",
-      skills: ["HTML/CSS", "JavaScript", "React", "Node.js", "Databases", "API Development"],
-      deliverables: ["Portfolio website", "3 full-stack applications", "Deploy to cloud platforms"],
-      resources: ["Project-based learning", "Code reviews", "Industry mentors", "Real-world projects"]
-    },
-    {
-      id: 3,
-      timeRange: "1 Year",
-      title: "Data Analytics",
-      icon: Analytics,
-      color: "info",
-      status: "pending",
-      shortDescription: "Master data analysis and visualization",
-      detailedDescription: "Learn to extract insights from data using statistical analysis, machine learning, and visualization tools. Develop skills in data cleaning, analysis, and presentation.",
-      skills: ["Python/R", "SQL", "Statistics", "Data Visualization", "Machine Learning", "Business Intelligence"],
-      deliverables: ["Data analysis portfolio", "Predictive models", "Dashboard creation", "Business insights reports"],
-      resources: ["Real datasets", "Industry tools", "Statistics courses", "ML frameworks"]
-    },
-    {
-      id: 4,
-      timeRange: "2 Years",
-      title: "Cloud Architecture",
-      icon: Cloud,
-      color: "warning",
-      status: "pending",
-      shortDescription: "Design scalable cloud solutions",
-      detailedDescription: "Master cloud computing platforms and learn to design, implement, and manage scalable cloud infrastructure. Focus on security, performance, and cost optimization.",
-      skills: ["AWS/Azure/GCP", "DevOps", "Containerization", "Microservices", "Security", "Cost Optimization"],
-      deliverables: ["Cloud architecture designs", "Multi-tier applications", "CI/CD pipelines", "Security implementations"],
-      resources: ["Cloud labs", "Certification paths", "Architecture workshops", "Industry case studies"]
-    },
-    {
-      id: 5,
-      timeRange: "2+ Years",
-      title: "Cybersecurity Expert",
-      icon: Security,
-      color: "error",
-      status: "pending",
-      shortDescription: "Protect digital assets and systems",
-      detailedDescription: "Become an expert in cybersecurity, learning to identify vulnerabilities, implement security measures, and respond to threats. Develop skills in ethical hacking, risk assessment, and security management.",
-      skills: ["Ethical Hacking", "Risk Assessment", "Security Frameworks", "Incident Response", "Compliance", "Threat Analysis"],
-      deliverables: ["Security audits", "Penetration testing reports", "Security policies", "Incident response plans"],
-      resources: ["Security labs", "Certification programs", "Red team exercises", "Industry partnerships"]
+  const [careerPlan, setCareerPlan] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const generateCareerPlan = async () => {
+    setLoading(true);
+    setError(null);
+    
+    // try {
+      const requestData = {
+        user_profile: {
+          interests_values: "Passionate about technology and innovation. Values continuous learning, work-life balance, and making meaningful impact through technology",
+          work_experience: "Currently working in business/operations role. Strong foundation in analytical thinking and problem-solving",
+          circumstances: "Can handle moderate income changes during transition. Prefer flexible learning schedule. Available for evening courses",
+          skills: "Analytical thinking, Problem-solving, Communication, Project management, Business analysis",
+          goals: "Transition to a technical role within 12-18 months. Focus on building practical skills. Target career growth and higher earning potential"
+        },
+        target_role: "Full-Stack Developer",
+        target_industry: "Technology",
+        location: "Remote",
+        timeline_months: 12
+      };
+      console.log(requestData)
+
+      const response = await fetch('http://localhost:8000/api/v1/generate-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      })
+      .then(response => response.json()) // Parse the JSON response body
+      .then(data => {
+          console.log('Success:', data); // Access the data here
+      })
+      .catch(error => {
+          console.error('Error:', error);
+      });
+      
+      console.log(response)
+      
+    //   if (!response.ok) {
+    //     throw new Error(`HTTP error! status: ${response.status}`);
+    //   }
+      
+    //   const data = await response.json();
+    //   setCareerPlan(data);
+    //   console.log('Generated career plan:', data);
+    // } catch (error) {
+    //   console.error('Error generating career plan:', error);
+    //   setError(error.message);
+    // } finally {
+    //   setLoading(false);
+    // }
+  };
+
+  useEffect(() => {
+    generateCareerPlan();
+  }, []);
+
+  // Transform API response to display format
+  const transformMilestoneToPathway = (milestone, index) => {
+    const iconMap = {
+      'skill_development': Code,
+      'certification': TrendingUp,
+      'networking': Analytics,
+      'portfolio': Cloud,
+      'job_application': Security,
+      'education': Code,
+      'financial': Analytics,
+      'experience': TrendingUp
+    };
+    
+    const colorMap = {
+      'high': 'error',
+      'medium': 'warning',
+      'low': 'success'
+    };
+    
+    return {
+      id: milestone.id,
+      timeRange: `${milestone.estimated_duration_weeks} weeks`,
+      title: milestone.title,
+      icon: iconMap[milestone.type] || Code,
+      color: colorMap[milestone.priority] || 'primary',
+      status: milestone.status,
+      shortDescription: milestone.description.substring(0, 100) + '...',
+      detailedDescription: milestone.description,
+      skills: milestone.success_criteria || [],
+      deliverables: milestone.success_criteria || [],
+      resources: milestone.resources?.map(r => r.name || r.url || 'Resource') || []
+    };
+  };
+  
+  const careerPathway = careerPlan?.milestones?.map(transformMilestoneToPathway) || [];
+  
+  const generatePersonalizedMarkdown = () => {
+    if (!careerPlan) {
+      return `## Generating Your Personalized Career Insights...
+
+Please wait while we analyze your profile and create a customized career transition plan.
+
+---
+
+### What we're doing:
+- Analyzing current market trends for your target role
+- Identifying skill gaps and learning opportunities  
+- Creating a step-by-step milestone plan
+- Gathering industry insights and salary data
+
+Your personalized insights will appear here once the plan is generated.`;
     }
-  ];
+
+    const insights = careerPlan.market_insights || {};
+    const milestones = careerPlan.milestones || [];
+    
+    return `## Your Personalized Career Insights
+
+**Target Role:** ${careerPlan.target_role}  
+**Target Industry:** ${careerPlan.target_industry}  
+**Plan Duration:** ${careerPlan.plan_duration_months} months
+
+---
+
+### Market Analysis
+
+${insights.salary_range ? `**💰 Salary Range:**
+- Entry Level: $${insights.salary_range.entry?.toLocaleString() || 'N/A'}
+- Mid Level: $${insights.salary_range.mid?.toLocaleString() || 'N/A'}  
+- Senior Level: $${insights.salary_range.senior?.toLocaleString() || 'N/A'}` : ''}
+
+${insights.job_growth ? `**📈 Job Growth:** ${insights.job_growth}` : ''}
+${insights.demand_level ? `**🔥 Demand Level:** ${insights.demand_level}` : ''}
+${insights.remote_percentage ? `**🏠 Remote Work:** ${insights.remote_percentage}% of positions offer remote work` : ''}
+
+${insights.key_skills?.length ? `**🎯 Key Skills in Demand:**
+${insights.key_skills.map(skill => `- ${skill}`).join('\n')}` : ''}
+
+${insights.top_companies?.length ? `**🏢 Top Hiring Companies:**
+${insights.top_companies.map(company => `- ${company}`).join('\n')}` : ''}
+
+---
+
+### Your Learning Path
+
+**Total Milestones:** ${milestones.length}  
+**Completion:** ${careerPlan.completion_percentage?.toFixed(1) || 0}%
+
+**Next Steps:**
+${milestones.slice(0, 3).map((milestone, i) => 
+  `${i + 1}. **${milestone.title}** (${milestone.estimated_duration_weeks} weeks) - ${milestone.priority} priority`
+).join('\n')}
+
+---
+
+*Plan created: ${careerPlan.created_date ? new Date(careerPlan.created_date).toLocaleDateString() : 'Today'}*  
+*Last updated: ${careerPlan.last_updated ? new Date(careerPlan.last_updated).toLocaleDateString() : 'Today'}*
+`;
+  };
 
   const handleStepClick = (step) => {
     setSelectedStep(step);
@@ -157,11 +211,10 @@ const Paths = () => {
     setSelectedStep(null);
   };
 
-  // Dummy refresh handler for demonstration
+  // Refresh handler to regenerate plan
   const handleRefresh = (e, step) => {
     e.stopPropagation();
-    // You can implement actual refresh logic here
-    alert(`Refresh requested for "${step.title}"`);
+    generateCareerPlan();
   };
 
   const getStatusColor = (status) => {
@@ -239,7 +292,7 @@ const Paths = () => {
                   }
                 }}
               >
-                <ReactMarkdown>{DEFAULT_MARKDOWN}</ReactMarkdown>
+                <ReactMarkdown>{generatePersonalizedMarkdown()}</ReactMarkdown>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
@@ -256,383 +309,104 @@ const Paths = () => {
           </CardContent>
         </Card>
 
-        <Box sx={{ mb: 8 }}>
-          <Stepper orientation="vertical" sx={{ pl: 2 }}>
-            <Step key={careerPathway[0].id} active={true} sx={{ mb: 2 }}>
-              <StepLabel
-                StepIconComponent={() => {
-                  const IconComponent = careerPathway[0].icon;
-                  return (
-                    <Box
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        backgroundColor: `${careerPathway[0].color}.main`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        opacity: careerPathway[0].status === 'pending' ? 0.6 : 1
+        {loading && (
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography variant="h6">Generating your personalized career plan...</Typography>
+          </Box>
+        )}
+        
+        {error && (
+          <Box sx={{ textAlign: 'center', mb: 4, p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
+            <Typography variant="h6" color="error">Error: {error}</Typography>
+            <Button onClick={generateCareerPlan} variant="contained" sx={{ mt: 1 }}>
+              Retry
+            </Button>
+          </Box>
+        )}
+
+        {careerPathway.length > 0 && (
+          <Box sx={{ mb: 8 }}>
+            <Stepper orientation="vertical" sx={{ pl: 2 }}>
+              {careerPathway.map((step, index) => (
+                <Step key={step.id} active={true} sx={{ mb: 2 }}>
+                  <StepLabel
+                    StepIconComponent={() => {
+                      const IconComponent = step.icon;
+                      return (
+                        <Box
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            backgroundColor: `${step.color}.main`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            opacity: step.status === 'pending' ? 0.6 : 1
+                          }}
+                        >
+                          <IconComponent sx={{ fontSize: 24 }} />
+                        </Box>
+                      );
+                    }}
+                  >
+                    <Card 
+                      sx={{ 
+                        ml: 2, 
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        border: '1px solid',
+                        borderColor: step.status === 'in_progress' ? 'primary.main' : 'grey.200',
+                        backgroundColor: step.status === 'completed' ? 'success.50' : 'background.paper',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+                        }
                       }}
+                      onClick={() => handleStepClick(step)}
                     >
-                      <IconComponent sx={{ fontSize: 24 }} />
-                    </Box>
-                  );
-                }}
-              >
-                <Card 
-                  sx={{ 
-                    ml: 2, 
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    border: '1px solid',
-                    borderColor: careerPathway[0].status === 'in_progress' ? 'primary.main' : 'grey.200',
-                    backgroundColor: careerPathway[0].status === 'completed' ? 'success.50' : 'background.paper',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-                    }
-                  }}
-                  onClick={() => handleStepClick(careerPathway[0])}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                      <Box>
-                        1 Month
-                        <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
-                          {careerPathway[0].title}
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">
+                              {step.timeRange}
+                            </Typography>
+                            <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
+                              {step.title}
+                            </Typography>
+                          </Box>
+                          <IconButton
+                            aria-label="Refresh"
+                            size="small"
+                            onClick={e => handleRefresh(e, step)}
+                            sx={{
+                              color: getStatusColor(step.status) + '.main',
+                              backgroundColor: 'grey.100',
+                              '&:hover': {
+                                backgroundColor: 'grey.200'
+                              }
+                            }}
+                          >
+                            <RefreshIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {step.shortDescription}
                         </Typography>
-                      </Box>
-                      <IconButton
-                        aria-label="Refresh"
-                        size="small"
-                        onClick={e => handleRefresh(e, careerPathway[0])}
-                        sx={{
-                          color: getStatusColor(careerPathway[0].status) + '.main',
-                          backgroundColor: 'grey.100',
-                          '&:hover': {
-                            backgroundColor: 'grey.200'
-                          }
-                        }}
-                      >
-                        <RefreshIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {careerPathway[0].shortDescription}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </StepLabel>
-              {careerPathway.length > 1 && (
-                <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
-                  <Box sx={{ height: 20 }} />
-                </StepContent>
-              )}
-            </Step>
-
-            {careerPathway[1] && (
-              <Step key={careerPathway[1].id} active={true} sx={{ mb: 2 }}>
-                <StepLabel
-                  StepIconComponent={() => {
-                    const IconComponent = careerPathway[1].icon;
-                    return (
-                      <Box
-                        sx={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: '50%',
-                          backgroundColor: `${careerPathway[1].color}.main`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          opacity: careerPathway[1].status === 'pending' ? 0.6 : 1
-                        }}
-                      >
-                        <IconComponent sx={{ fontSize: 24 }} />
-                      </Box>
-                    );
-                  }}
-                >
-                  <Card 
-                    sx={{ 
-                      ml: 2, 
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid',
-                      borderColor: careerPathway[1].status === 'in_progress' ? 'primary.main' : 'grey.200',
-                      backgroundColor: careerPathway[1].status === 'completed' ? 'success.50' : 'background.paper',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-                      }
-                    }}
-                    onClick={() => handleStepClick(careerPathway[1])}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box>
-                          1 Month
-                          <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
-                            {careerPathway[1].title}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          aria-label="Refresh"
-                          size="small"
-                          onClick={e => handleRefresh(e, careerPathway[1])}
-                          sx={{
-                            color: getStatusColor(careerPathway[1].status) + '.main',
-                            backgroundColor: 'grey.100',
-                            '&:hover': {
-                              backgroundColor: 'grey.200'
-                            }
-                          }}
-                        >
-                          <RefreshIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {careerPathway[1].shortDescription}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </StepLabel>
-                {careerPathway.length > 2 && (
-                  <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
-                    <Box sx={{ height: 20 }} />
-                  </StepContent>
-                )}
-              </Step>
-            )}
-
-            {careerPathway[2] && (
-              <Step key={careerPathway[2].id} active={true} sx={{ mb: 2 }}>
-                <StepLabel
-                  StepIconComponent={() => {
-                    const IconComponent = careerPathway[2].icon;
-                    return (
-                      <Box
-                        sx={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: '50%',
-                          backgroundColor: `${careerPathway[2].color}.main`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          opacity: careerPathway[2].status === 'pending' ? 0.6 : 1
-                        }}
-                      >
-                        <IconComponent sx={{ fontSize: 24 }} />
-                      </Box>
-                    );
-                  }}
-                >
-                  <Card 
-                    sx={{ 
-                      ml: 2, 
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid',
-                      borderColor: careerPathway[2].status === 'in_progress' ? 'primary.main' : 'grey.200',
-                      backgroundColor: careerPathway[2].status === 'completed' ? 'success.50' : 'background.paper',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-                      }
-                    }}
-                    onClick={() => handleStepClick(careerPathway[2])}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box>
-                          1 Month
-                          <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
-                            {careerPathway[2].title}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          aria-label="Refresh"
-                          size="small"
-                          onClick={e => handleRefresh(e, careerPathway[2])}
-                          sx={{
-                            color: getStatusColor(careerPathway[2].status) + '.main',
-                            backgroundColor: 'grey.100',
-                            '&:hover': {
-                              backgroundColor: 'grey.200'
-                            }
-                          }}
-                        >
-                          <RefreshIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {careerPathway[2].shortDescription}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </StepLabel>
-                {careerPathway.length > 3 && (
-                  <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
-                    <Box sx={{ height: 20 }} />
-                  </StepContent>
-                )}
-              </Step>
-            )}
-
-            {careerPathway[3] && (
-              <Step key={careerPathway[3].id} active={true} sx={{ mb: 2 }}>
-                <StepLabel
-                  StepIconComponent={() => {
-                    const IconComponent = careerPathway[3].icon;
-                    return (
-                      <Box
-                        sx={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: '50%',
-                          backgroundColor: `${careerPathway[3].color}.main`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          opacity: careerPathway[3].status === 'pending' ? 0.6 : 1
-                        }}
-                      >
-                        <IconComponent sx={{ fontSize: 24 }} />
-                      </Box>
-                    );
-                  }}
-                >
-                  <Card 
-                    sx={{ 
-                      ml: 2, 
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid',
-                      borderColor: careerPathway[3].status === 'in_progress' ? 'primary.main' : 'grey.200',
-                      backgroundColor: careerPathway[3].status === 'completed' ? 'success.50' : 'background.paper',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-                      }
-                    }}
-                    onClick={() => handleStepClick(careerPathway[3])}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box>
-                          1 Month
-                          <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
-                            {careerPathway[3].title}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          aria-label="Refresh"
-                          size="small"
-                          onClick={e => handleRefresh(e, careerPathway[3])}
-                          sx={{
-                            color: getStatusColor(careerPathway[3].status) + '.main',
-                            backgroundColor: 'grey.100',
-                            '&:hover': {
-                              backgroundColor: 'grey.200'
-                            }
-                          }}
-                        >
-                          <RefreshIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {careerPathway[3].shortDescription}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </StepLabel>
-                {careerPathway.length > 4 && (
-                  <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
-                    <Box sx={{ height: 20 }} />
-                  </StepContent>
-                )}
-              </Step>
-            )}
-
-            {careerPathway[4] && (
-              <Step key={careerPathway[4].id} active={true} sx={{ mb: 2 }}>
-                <StepLabel
-                  StepIconComponent={() => {
-                    const IconComponent = careerPathway[4].icon;
-                    return (
-                      <Box
-                        sx={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: '50%',
-                          backgroundColor: `${careerPathway[4].color}.main`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          opacity: careerPathway[4].status === 'pending' ? 0.6 : 1
-                        }}
-                      >
-                        <IconComponent sx={{ fontSize: 24 }} />
-                      </Box>
-                    );
-                  }}
-                >
-                  <Card 
-                    sx={{ 
-                      ml: 2, 
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid',
-                      borderColor: careerPathway[4].status === 'in_progress' ? 'primary.main' : 'grey.200',
-                      backgroundColor: careerPathway[4].status === 'completed' ? 'success.50' : 'background.paper',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-                      }
-                    }}
-                    onClick={() => handleStepClick(careerPathway[4])}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box>
-                          1 Month
-                          <Typography variant="h6" component="h3" sx={{ fontWeight: 600 }}>
-                            {careerPathway[4].title}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          aria-label="Refresh"
-                          size="small"
-                          onClick={e => handleRefresh(e, careerPathway[4])}
-                          sx={{
-                            color: getStatusColor(careerPathway[4].status) + '.main',
-                            backgroundColor: 'grey.100',
-                            '&:hover': {
-                              backgroundColor: 'grey.200'
-                            }
-                          }}
-                        >
-                          <RefreshIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {careerPathway[4].shortDescription}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </StepLabel>
-                {/* No StepContent for last step */}
-              </Step>
-            )}
-          </Stepper>
-        </Box>
+                      </CardContent>
+                    </Card>
+                  </StepLabel>
+                  {index < careerPathway.length - 1 && (
+                    <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
+                      <Box sx={{ height: 20 }} />
+                    </StepContent>
+                  )}
+                </Step>
+              ))}
+            </Stepper>
+          </Box>
+        )}
 
         <Grid container justifyContent="center">
           <Grid item xs={12} md={10}>
