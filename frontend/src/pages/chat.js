@@ -310,11 +310,13 @@ const Chat = () => {
     for (let i = 1; i <= category.questions.length; i++) {
       const questionKey = `${categoryKey}_q${i}`;
       if (userResponses[questionKey]) {
-        responses.push(userResponses[questionKey]);
+        const question = category.questions[i - 1]; // Get the actual question text
+        const answer = userResponses[questionKey];
+        responses.push(`${question}: ${answer}`);
       }
     }
     
-    return responses.join(' | ');
+    return responses.join(' || ');
   };
 
   const getProgressPercentage = () => {
