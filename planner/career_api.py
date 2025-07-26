@@ -27,20 +27,20 @@ planner = LLMCareerPlanner()
 
 # Request Models
 class UserProfile(BaseModel):
-    current_role: str = Field(..., description="Current job title or position")
-    skills: str = Field(..., description="Comma-separated list of current skills")
-    interests: str = Field(..., description="Professional interests and passions")
-    goals: str = Field(..., description="Career goals and aspirations")
-    financials: str = Field(..., description="Financial constraints and considerations")
+    interests_values: str = Field(..., description="Professional interests, personal values, and motivations")
+    work_experience: str = Field(..., description="Current role, past roles, and relevant work history")
+    circumstances: str = Field(..., description="Financial situation, time constraints, location preferences, and other personal circumstances")
+    skills: str = Field(..., description="Current technical and soft skills, certifications, and competencies")
+    goals: str = Field(..., description="Career goals, aspirations, and desired outcomes")
     
     class Config:
         schema_extra = {
             "example": {
-                "current_role": "Software Developer",
-                "skills": "Python, JavaScript, SQL, Git",
-                "interests": "Machine Learning, Data Analysis, AI",
-                "goals": "Transition to Data Science, work on ML projects",
-                "financials": "Can handle 3-month income reduction, have savings"
+                "interests_values": "Passionate about Machine Learning, Data Analysis, and AI. Values continuous learning, work-life balance, and making meaningful impact through technology",
+                "work_experience": "Software Developer with 3 years experience building web applications. Previous internship at tech startup. Strong foundation in software engineering",
+                "circumstances": "Can handle 3-month income reduction, have savings. Prefer remote work. Available for evening courses. No relocation constraints",
+                "skills": "Python, JavaScript, SQL, Git, React, Node.js, Problem-solving, Team collaboration",
+                "goals": "Transition to Data Science role within 9 months. Focus on ML projects. Target salary increase of 20%. Work at innovative tech company"
             }
         }
 
@@ -55,11 +55,11 @@ class CareerPlanRequest(BaseModel):
         schema_extra = {
             "example": {
                 "user_profile": {
-                    "current_role": "Software Developer",
-                    "skills": "Python, JavaScript, SQL, Git",
-                    "interests": "Machine Learning, Data Analysis, AI",
-                    "goals": "Transition to Data Science, work on ML projects",
-                    "financials": "Can handle 3-month income reduction, have savings"
+                    "interests_values": "Passionate about Machine Learning, Data Analysis, and AI. Values continuous learning, work-life balance, and making meaningful impact through technology",
+                    "work_experience": "Software Developer with 3 years experience building web applications. Previous internship at tech startup. Strong foundation in software engineering",
+                    "circumstances": "Can handle 3-month income reduction, have savings. Prefer remote work. Available for evening courses. No relocation constraints",
+                    "skills": "Python, JavaScript, SQL, Git, React, Node.js, Problem-solving, Team collaboration",
+                    "goals": "Transition to Data Science role within 9 months. Focus on ML projects. Target salary increase of 20%. Work at innovative tech company"
                 },
                 "target_role": "Data Scientist",
                 "target_industry": "Technology",
@@ -174,11 +174,11 @@ async def generate_career_plan(request: CareerPlanRequest):
     try:
         # Convert request to dictionary format
         user_data = {
-            "current_role": request.user_profile.current_role,
+            "interests_values": request.user_profile.interests_values,
+            "work_experience": request.user_profile.work_experience,
+            "circumstances": request.user_profile.circumstances,
             "skills": request.user_profile.skills,
-            "interests": request.user_profile.interests,
-            "goals": request.user_profile.goals,
-            "financials": request.user_profile.financials
+            "goals": request.user_profile.goals
         }
         
         # Generate plan using LLM
@@ -287,30 +287,30 @@ async def validate_user_profile(profile: UserProfile):
         feedback = []
         
         # Analyze profile completeness
-        if len(profile.current_role) > 5:
+        if len(profile.interests_values) > 10:
             readiness_score += 20
         else:
-            feedback.append("Provide more detailed current role information")
+            feedback.append("Provide more detailed interests and values")
+        
+        if len(profile.work_experience) > 10:
+            readiness_score += 20
+        else:
+            feedback.append("Provide more detailed work experience")
+        
+        if len(profile.circumstances) > 10:
+            readiness_score += 15
+        else:
+            feedback.append("Provide more information about your circumstances")
         
         if skills_count >= 3:
             readiness_score += 25
         else:
             feedback.append("List at least 3 current skills")
         
-        if len(profile.interests) > 10:
-            readiness_score += 20
-        else:
-            feedback.append("Provide more detailed interests")
-        
         if len(profile.goals) > 10:
             readiness_score += 20
         else:
             feedback.append("Provide more specific career goals")
-        
-        if len(profile.financials) > 5:
-            readiness_score += 15
-        else:
-            feedback.append("Consider financial planning for transition")
         
         return {
             "profile_completeness": f"{readiness_score}%",

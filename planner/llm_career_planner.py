@@ -59,7 +59,7 @@ class LLMCareerPlanner:
     def load_config(self):
         """Load configuration from env.yaml"""
         try:
-            with open('/home/kcoelho/WorkUp/Clarity/env.yaml', 'r') as f:
+            with open('./env.yaml', 'r') as f:
                 config = yaml.safe_load(f)
                 self.openai_api_key = config.get('OPENAPI_KEY')
         except Exception as e:
@@ -174,7 +174,7 @@ CURRENT MARKET DATA:
 {market_data}
 
 REQUIREMENTS:
-Generate a detailed 9-month career transition plan with the following structure:
+Generate a detailed 2-year career transition plan with the following structure:
 
 1. MARKET ANALYSIS:
    - Current salary ranges for {target_role}
