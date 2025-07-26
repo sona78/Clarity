@@ -9,6 +9,7 @@ from llm_career_planner import LLMCareerPlanner
 import requests
 from exa_py import Exa
 import yaml
+from db import getUserInformationFromDB
 
 app = FastAPI(
     title="Cascading Career Milestone API",
@@ -41,6 +42,7 @@ except Exception as e:
 
 # Enhanced Models
 class UserProfile(BaseModel):
+    username: str = Field(..., description="Unique username for the user")
     interests_values: str = Field(..., description="Interests and values")
     work_experience: str = Field(..., description="Work experience details")
     circumstances: str = Field(..., description="Personal circumstances")
@@ -640,14 +642,19 @@ async def root():
     }
 
 @app.post("/api/v3/generate-plan", response_model=CareerPlan)
-async def generate_cascading_plan(user_profile: UserProfile):
+async def generate_cascading_plan(username: str):
     """Generate initial career plan with cascading milestone structure"""
     try:
-        # Extract target role and industry from user profile goals/interests
-        target_role = user_profile.goals.split(',')[0].strip() if user_profile.goals else "Career Transition"
-        target_industry = "Technology"  # Default, could be inferred from goals/interests
+        # Get user data from database
+        user_profile = getUserInformationFromDB(username)
+        if not user_profile:
+            raise HTTPException(status_code=404, detail=f"User {username} not found")
         
-        plan = manager.generate_initial_plan(user_profile, target_role, target_industry)
+        # # Extract target role and industry from user profile goals/interests
+        # target_role = user_profile.goals.split(',')[0].strip() if user_profile.goals else "Career Transition"
+        # target_industry = "Technology"  # Default, could be inferred from goals/interests
+        
+        plan = manager.generate_initial_plan(user_profile, "", "")
         return plan
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate plan: {str(e)}")
