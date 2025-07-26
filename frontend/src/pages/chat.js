@@ -99,7 +99,7 @@ const Chat = () => {
     if (messages.length === 0) {
       const welcomeMessage = {
         id: 1,
-        text: `Hello! I'm here to help you explore your career path. I'll ask you a series of questions across 5 key areas to better understand your situation and goals. Let's start with your interests and values!`,
+        text: `Hello! I'm here to help you explore your career path. I'll ask you a series of questions across 5 key areas to better understand your situation and goals. Say hello, and lets get started!`,
         sender: "assistant",
         timestamp: new Date(),
         category: categories[0].name
@@ -245,6 +245,91 @@ const Chat = () => {
         setMessages(prev => [...prev, completionMessage]);
         setMessageIdCounter(prev => prev + 1);
         await saveUserInformation();
+      }
+    }
+  };
+
+  // Handle skipping a question
+  const handleSkipQuestion = () => {
+    // Save empty response for current question
+    const categoryName = categories[currentCategory].name;
+    const questionKey = `${categoryName.toLowerCase().replace(/[^a-z]/g, '_')}_q${currentQuestionIndex + 1}`;
+    
+    setUserResponses(prev => ({
+      ...prev,
+      [questionKey]: '[SKIPPED]'
+    }));
+
+    // Move to next question or category (same logic as handleSendMessage)
+    if (currentQuestionIndex < categories[currentCategory].questions.length - 1) {
+      // Move to next question in same category
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextQuestionIndex);
+      
+      setTimeout(() => {
+        const category = categories[currentCategory];
+        const question = category.questions[nextQuestionIndex];
+        
+        const questionMessage = {
+          id: messageIdCounter + 1,
+          text: question,
+          sender: "assistant",
+          timestamp: new Date(),
+          category: category.name,
+          questionIndex: nextQuestionIndex
+        };
+        
+        setMessages(prev => [...prev, questionMessage]);
+        setMessageIdCounter(prev => prev + 1);
+      }, 1000);
+      
+    } else {
+      // Move to next category
+      if (currentCategory < categories.length - 1) {
+        const nextCategory = currentCategory + 1;
+        setCurrentCategory(nextCategory);
+        setCurrentQuestionIndex(0);
+        
+        const categoryTransitionMessage = {
+          id: messageIdCounter + 1,
+          text: `Great! Now let's move on to ${categories[nextCategory].name}.`,
+          sender: "assistant",
+          timestamp: new Date(),
+          category: categories[nextCategory].name
+        };
+        
+        setMessages(prev => [...prev, categoryTransitionMessage]);
+        setMessageIdCounter(prev => prev + 1);
+        
+        setTimeout(() => {
+          const category = categories[nextCategory];
+          const question = category.questions[0];
+          
+          const questionMessage = {
+            id: messageIdCounter + 2,
+            text: question,
+            sender: "assistant",
+            timestamp: new Date(),
+            category: category.name,
+            questionIndex: 0
+          };
+          
+          setMessages(prev => [...prev, questionMessage]);
+          setMessageIdCounter(prev => prev + 1);
+        }, 1000);
+        
+      } else {
+        // All questions completed
+        const completionMessage = {
+          id: messageIdCounter + 1,
+          text: "Excellent! I've gathered all the information I need. Let me save your responses and provide you with some personalized career insights.",
+          sender: "assistant",
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, completionMessage]);
+        setMessageIdCounter(prev => prev + 1);
+        saveUserInformation();
       }
     }
   };
@@ -496,9 +581,19 @@ const Chat = () => {
                         variant="contained"
                         disabled={!inputMessage.trim() || isSaving}
                         startIcon={<Send />}
-                        sx={{ minWidth: 100 }}
+                        sx={{ minWidth: 100, mb: 0.5 }}
                       >
                         Send
+                      </Button>
+                    </Grid>
+                    <Grid item>
+                      <Button
+                        variant="outlined"
+                        disabled={isSaving || messages.length <= 1}
+                        onClick={() => handleSkipQuestion()}
+                        sx={{ minWidth: 100, mb: 0.5 }}
+                      >
+                        Skip
                       </Button>
                     </Grid>
                   </Grid>
