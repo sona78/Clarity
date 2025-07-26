@@ -75,12 +75,11 @@ const Paths = () => {
       .then(response => response.json()) // Parse the JSON response body
       .then(data => {
           console.log('Success:', data); // Access the data here
+          setCareerPlan(data.markdown)
       })
       .catch(error => {
           console.error('Error:', error);
       });
-      
-      console.log(response)
       
     //   if (!response.ok) {
     //     throw new Error(`HTTP error! status: ${response.status}`);
@@ -135,8 +134,6 @@ const Paths = () => {
     };
   };
   
-  const careerPathway = careerPlan?.milestones?.map(transformMilestoneToPathway) || [];
-  
   const generatePersonalizedMarkdown = () => {
     if (!careerPlan) {
       return `## Generating Your Personalized Career Insights...
@@ -153,52 +150,7 @@ Please wait while we analyze your profile and create a customized career transit
 
 Your personalized insights will appear here once the plan is generated.`;
     }
-
-    const insights = careerPlan.market_insights || {};
-    const milestones = careerPlan.milestones || [];
-    
-    return `## Your Personalized Career Insights
-
-**Target Role:** ${careerPlan.target_role}  
-**Target Industry:** ${careerPlan.target_industry}  
-**Plan Duration:** ${careerPlan.plan_duration_months} months
-
----
-
-### Market Analysis
-
-${insights.salary_range ? `**💰 Salary Range:**
-- Entry Level: $${insights.salary_range.entry?.toLocaleString() || 'N/A'}
-- Mid Level: $${insights.salary_range.mid?.toLocaleString() || 'N/A'}  
-- Senior Level: $${insights.salary_range.senior?.toLocaleString() || 'N/A'}` : ''}
-
-${insights.job_growth ? `**📈 Job Growth:** ${insights.job_growth}` : ''}
-${insights.demand_level ? `**🔥 Demand Level:** ${insights.demand_level}` : ''}
-${insights.remote_percentage ? `**🏠 Remote Work:** ${insights.remote_percentage}% of positions offer remote work` : ''}
-
-${insights.key_skills?.length ? `**🎯 Key Skills in Demand:**
-${insights.key_skills.map(skill => `- ${skill}`).join('\n')}` : ''}
-
-${insights.top_companies?.length ? `**🏢 Top Hiring Companies:**
-${insights.top_companies.map(company => `- ${company}`).join('\n')}` : ''}
-
----
-
-### Your Learning Path
-
-**Total Milestones:** ${milestones.length}  
-**Completion:** ${careerPlan.completion_percentage?.toFixed(1) || 0}%
-
-**Next Steps:**
-${milestones.slice(0, 3).map((milestone, i) => 
-  `${i + 1}. **${milestone.title}** (${milestone.estimated_duration_weeks} weeks) - ${milestone.priority} priority`
-).join('\n')}
-
----
-
-*Plan created: ${careerPlan.created_date ? new Date(careerPlan.created_date).toLocaleDateString() : 'Today'}*  
-*Last updated: ${careerPlan.last_updated ? new Date(careerPlan.last_updated).toLocaleDateString() : 'Today'}*
-`;
+    return careerPlan
   };
 
   const handleStepClick = (step) => {
@@ -324,10 +276,10 @@ ${milestones.slice(0, 3).map((milestone, i) =>
           </Box>
         )}
 
-        {careerPathway.length > 0 && (
+        {true && (
           <Box sx={{ mb: 8 }}>
             <Stepper orientation="vertical" sx={{ pl: 2 }}>
-              {careerPathway.map((step, index) => (
+              {[].map((step, index) => (
                 <Step key={step.id} active={true} sx={{ mb: 2 }}>
                   <StepLabel
                     StepIconComponent={() => {
@@ -397,7 +349,7 @@ ${milestones.slice(0, 3).map((milestone, i) =>
                       </CardContent>
                     </Card>
                   </StepLabel>
-                  {index < careerPathway.length - 1 && (
+                  {index < [].length - 1 && (
                     <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
                       <Box sx={{ height: 20 }} />
                     </StepContent>
@@ -418,10 +370,10 @@ ${milestones.slice(0, 3).map((milestone, i) =>
             }}>
               <CardContent sx={{ py: 6, px: 4 }}>
                 <Typography variant="h4" component="h3" gutterBottom sx={{ fontWeight: 600, color: 'white' }}>
-                  Need Personalized Guidance?
+                  Need More Personalized Guidance?
                 </Typography>
                 <Typography variant="h6" sx={{ mb: 4, opacity: 0.9, maxWidth: '500px', mx: 'auto' }}>
-                  Chat with our AI assistant to get customized advice for your specific career goals and current situation.
+                  Chat with our AI assistant to share your specific career goals and current situation.
                 </Typography>
                 <Button 
                   variant="contained" 
@@ -439,7 +391,7 @@ ${milestones.slice(0, 3).map((milestone, i) =>
                     }
                   }}
                 >
-                  Get Personalized Advice
+                  Personalize your Recommendations
                 </Button>
               </CardContent>
             </Card>
