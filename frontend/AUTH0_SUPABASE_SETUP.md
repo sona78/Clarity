@@ -92,7 +92,7 @@ REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 1. **Start the development server**: `npm start`
 2. **Login with Auth0**: Navigate to the chat page and login
-3. **Complete the questionnaire**: Answer all 20 questions
+3. **Complete the questionnaire**: Answer all questions across the 5 categories
 4. **Check Supabase**: Verify data is saved in your `User Information` table
 
 ## How It Works

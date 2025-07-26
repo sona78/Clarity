@@ -32,6 +32,7 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
+  const [messageIdCounter, setMessageIdCounter] = useState(1);
 
   // Define the 5 categories and their questions
   const categories = [
@@ -39,35 +40,46 @@ const Chat = () => {
       name: 'Interests + Values',
       icon: <Psychology />,
       questions: [
-        'What are your main interests and hobbies?',
+        'What are the things you value the most in life?',
+        'What do you enjoy doing?',
       ]
     },
     {
       name: 'Work Experience',
       icon: <Work />,
       questions: [
-        'What jobs have you had in the past?',
+        'Briefly list your current and previous jobs',
+        'Tell me about a job / project at work you really enjoyed',
+        'Tell me about a job / project at work you really didn\'t enjoy',
       ]
     },
     {
       name: 'Circumstances',
       icon: <Person />,
       questions: [
-        'What is your current living situation?',
+        'How old are you?',
+        'Where do you live?',
+        'Approximately how much money do you make?',
+        'Who depends on your income?',
+        'How much time do you want to spend learning new things?',
+        'Do you have any other constraints (eg. health)?',
       ]
     },
     {
       name: 'Skills',
       icon: <School />,
       questions: [
-        'What technical skills do you currently have?',
+        'What technical skills do you have?',
+        'What else are you good at?',
+        'What do you wish you were better at?',
       ]
     },
     {
       name: 'Goals',
       icon: <Flag />,
       questions: [
-        'What are your short-term career goals (next 1-2 years)?',
+        'What are a few life goals you have?',
+        'What makes you feel proud of yourself?',
       ]
     }
   ];
@@ -93,16 +105,17 @@ const Chat = () => {
         category: categories[0].name
       };
       setMessages([welcomeMessage]);
-      askNextQuestion();
+      setMessageIdCounter(2); // Start next message at ID 2
     }
   }, []);
 
   const askNextQuestion = () => {
+    // Use the current state values to get the correct question
     const category = categories[currentCategory];
     const question = category.questions[currentQuestionIndex];
     
     const questionMessage = {
-      id: messages.length + 1,
+      id: messageIdCounter,
       text: question,
       sender: "assistant",
       timestamp: new Date(),
@@ -111,6 +124,7 @@ const Chat = () => {
     };
     
     setMessages(prev => [...prev, questionMessage]);
+    setMessageIdCounter(prev => prev + 1);
   };
 
   const handleSendMessage = async (e) => {
@@ -118,7 +132,7 @@ const Chat = () => {
     if (!inputMessage.trim()) return;
 
     const userMessage = {
-      id: messages.length + 1,
+      id: messageIdCounter,
       text: inputMessage,
       sender: "user",
       timestamp: new Date(),
@@ -127,7 +141,30 @@ const Chat = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setMessageIdCounter(prev => prev + 1);
     setInputMessage('');
+
+    // Check if this is the first user message (no questions asked yet)
+    if (messages.length === 1) {
+      // This is the first user message, ask the first question
+      setTimeout(() => {
+        const category = categories[currentCategory];
+        const question = category.questions[currentQuestionIndex];
+        
+        const questionMessage = {
+          id: messageIdCounter + 1,
+          text: question,
+          sender: "assistant",
+          timestamp: new Date(),
+          category: category.name,
+          questionIndex: currentQuestionIndex
+        };
+        
+        setMessages(prev => [...prev, questionMessage]);
+        setMessageIdCounter(prev => prev + 1);
+      }, 1000);
+      return; // Exit early, don't process as a response
+    }
 
     // Save user response
     const categoryName = categories[currentCategory].name;
@@ -140,8 +177,27 @@ const Chat = () => {
 
     // Move to next question or category
     if (currentQuestionIndex < categories[currentCategory].questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setTimeout(() => askNextQuestion(), 1000);
+      // Move to next question in same category
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextQuestionIndex);
+      
+      setTimeout(() => {
+        const category = categories[currentCategory];
+        const question = category.questions[nextQuestionIndex];
+        
+        const questionMessage = {
+          id: messageIdCounter + 1,
+          text: question,
+          sender: "assistant",
+          timestamp: new Date(),
+          category: category.name,
+          questionIndex: nextQuestionIndex
+        };
+        
+        setMessages(prev => [...prev, questionMessage]);
+        setMessageIdCounter(prev => prev + 1);
+      }, 1000);
+      
     } else {
       // Move to next category
       if (currentCategory < categories.length - 1) {
@@ -150,7 +206,7 @@ const Chat = () => {
         setCurrentQuestionIndex(0);
         
         const categoryTransitionMessage = {
-          id: messages.length + 2,
+          id: messageIdCounter + 1,
           text: `Great! Now let's move on to ${categories[nextCategory].name}.`,
           sender: "assistant",
           timestamp: new Date(),
@@ -158,17 +214,36 @@ const Chat = () => {
         };
         
         setMessages(prev => [...prev, categoryTransitionMessage]);
-        setTimeout(() => askNextQuestion(), 1000);
+        setMessageIdCounter(prev => prev + 1);
+        
+        setTimeout(() => {
+          const category = categories[nextCategory];
+          const question = category.questions[0];
+          
+          const questionMessage = {
+            id: messageIdCounter + 2,
+            text: question,
+            sender: "assistant",
+            timestamp: new Date(),
+            category: category.name,
+            questionIndex: 0
+          };
+          
+          setMessages(prev => [...prev, questionMessage]);
+          setMessageIdCounter(prev => prev + 1);
+        }, 1000);
+        
       } else {
         // All questions completed
         const completionMessage = {
-          id: messages.length + 2,
+          id: messageIdCounter + 1,
           text: "Excellent! I've gathered all the information I need. Let me save your responses and provide you with some personalized career insights.",
           sender: "assistant",
           timestamp: new Date()
         };
         
         setMessages(prev => [...prev, completionMessage]);
+        setMessageIdCounter(prev => prev + 1);
         await saveUserInformation();
       }
     }
@@ -196,26 +271,28 @@ const Chat = () => {
       setSaveStatus('success');
       
       const successMessage = {
-        id: messages.length + 1,
+        id: messageIdCounter,
         text: "Perfect! Your information has been saved. Based on your responses, I can help you explore career paths that align with your interests, experience, and goals. Would you like me to provide some personalized career recommendations?",
         sender: "assistant",
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, successMessage]);
+      setMessageIdCounter(prev => prev + 1);
       
     } catch (error) {
       console.error('Error saving user information:', error);
       setSaveStatus('error');
       
       const errorMessage = {
-        id: messages.length + 1,
+        id: messageIdCounter,
         text: `I encountered an issue saving your information: ${error.message}. Please try again or contact support if the problem persists.`,
         sender: "assistant",
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, errorMessage]);
+      setMessageIdCounter(prev => prev + 1);
     } finally {
       setIsSaving(false);
     }
@@ -225,7 +302,12 @@ const Chat = () => {
     const categoryKey = categoryName.toLowerCase().replace(/[^a-z]/g, '_');
     const responses = [];
     
-    for (let i = 1; i <= 4; i++) {
+    // Find the category to get the actual number of questions
+    const category = categories.find(cat => cat.name === categoryName);
+    if (!category) return '';
+    
+    // Loop through the actual number of questions in this category
+    for (let i = 1; i <= category.questions.length; i++) {
       const questionKey = `${categoryKey}_q${i}`;
       if (userResponses[questionKey]) {
         responses.push(userResponses[questionKey]);

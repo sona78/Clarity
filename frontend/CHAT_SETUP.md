@@ -75,7 +75,7 @@ Run the SQL in `update-table-primary-key.sql` in your Supabase SQL Editor to:
 ## Features
 
 ### Progress Tracking
-- Overall progress bar (20 total questions)
+- Overall progress bar (dynamic total based on questions per category)
 - Current category progress
 - Visual category indicators
 
