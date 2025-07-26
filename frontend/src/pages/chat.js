@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useSupabase } from '../contexts/SupabaseContext';
 import { 
@@ -85,6 +85,7 @@ const Chat = () => {
   ];
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const chatBoxRef = useRef(null);
 
   useEffect(() => {
     // Optional: Log Supabase user for debugging
@@ -93,6 +94,13 @@ const Chat = () => {
       console.log('Supabase user ID:', user.id);
     }
   }, [user]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     // Initialize chat with welcome message
@@ -501,6 +509,7 @@ const Chat = () => {
 
                 {/* Chat Messages */}
                 <Box 
+                  ref={chatBoxRef}
                   sx={{ 
                     height: 400, 
                     overflowY: 'auto', 
