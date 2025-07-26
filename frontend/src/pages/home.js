@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSupabase } from '../contexts/SupabaseContext';
 import { 
   Container, 
   Grid, 
@@ -20,7 +20,7 @@ import Navigation from '../components/Navigation';
 import { CHAT_ROUTE, PATHS_ROUTE } from "../App";
 
 const Home = () => {
-  const { isAuthenticated, loginWithRedirect } = useAuth0();
+  const { user, supabase } = useSupabase();
 
   return (
     <>
@@ -37,7 +37,7 @@ const Home = () => {
             you need to take to achieve your professional goals.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-            {isAuthenticated ? (
+            {user ? (
               <>
                 <Button 
                   variant="contained" 
@@ -62,7 +62,7 @@ const Home = () => {
               <Button 
                 variant="contained" 
                 size="large" 
-                onClick={() => loginWithRedirect()}
+                onClick={() => window.location.href = '/auth'}
                 startIcon={<Chat />}
               >
                 Login to Start Your Career Journey
@@ -255,7 +255,7 @@ const Home = () => {
                 <Typography variant="h6" sx={{ mb: 5, opacity: 0.9, maxWidth: '600px', mx: 'auto' }}>
                   Join thousands of professionals who have already discovered their ideal career path.
                 </Typography>
-                {isAuthenticated ? (
+                {user ? (
                   <Button 
                     variant="contained" 
                     size="large" 
@@ -278,7 +278,7 @@ const Home = () => {
                   <Button 
                     variant="contained" 
                     size="large" 
-                    onClick={() => loginWithRedirect()}
+                    onClick={() => window.location.href = '/auth'}
                     sx={{ 
                       backgroundColor: 'white', 
                       color: 'primary.main',

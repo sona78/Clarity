@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSupabase } from '../contexts/SupabaseContext';
 import { 
   AppBar, 
   Toolbar, 
@@ -20,12 +20,10 @@ import { HOME_ROUTE } from "../App";
 
 const Navigation = () => {
   const { 
-    loginWithRedirect, 
-    logout, 
+    supabase, 
     user, 
-    isAuthenticated, 
-    isLoading 
-  } = useAuth0();
+    loading 
+  } = useSupabase();
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleUserMenuOpen = (event) => {
@@ -36,12 +34,12 @@ const Navigation = () => {
     setAnchorEl(null);
   };
 
+  const handleLogin = () => {
+    window.location.href = '/auth';
+  };
+
   const handleLogout = () => {
-    logout({ 
-      logoutParams: { 
-        returnTo: window.location.origin 
-      } 
-    });
+    supabase.auth.signOut();
     handleUserMenuClose();
   };
 
@@ -58,22 +56,22 @@ const Navigation = () => {
             Home
           </Button>
           
-          {!isLoading && (
+          {!loading && (
             <>
-              {isAuthenticated ? (
+              {user ? (
                 <>
                   <Button
                     onClick={handleUserMenuOpen}
                     sx={{ ml: 1, textTransform: 'none' }}
                     startIcon={
-                      user?.picture ? (
-                        <Avatar src={user.picture} sx={{ width: 24, height: 24 }} />
+                      user?.user_metadata?.avatar_url ? (
+                        <Avatar src={user.user_metadata.avatar_url} sx={{ width: 24, height: 24 }} />
                       ) : (
                         <AccountCircle />
                       )
                     }
                   >
-                    {user?.name || user?.email}
+                    {user?.user_metadata?.full_name || user?.email}
                   </Button>
                   <Menu
                     anchorEl={anchorEl}
@@ -90,7 +88,7 @@ const Navigation = () => {
               ) : (
                 <Button 
                   variant="contained" 
-                  onClick={() => loginWithRedirect()}
+                  onClick={handleLogin}
                   startIcon={<Login />}
                   sx={{ ml: 1 }}
                 >
