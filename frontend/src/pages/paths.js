@@ -42,13 +42,54 @@ const Paths = () => {
   const [modalOpen, setModalOpen] = useState(false);
 
   const [careerPlan, setCareerPlan] = useState(null);
+  const [planOverview, setPlanOverview] = useState(null);
+  const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const generateCareerPlan = async () => {
+
+  const generateMilestonePlan = async () => {
     setLoading(true);
     setError(null);
-    
+
+    try {
+        const username = "sona.om78@gmail.com";
+        const response = await fetch(`http://localhost:8000/api/v3/generate-plan/${username}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+          .then(response => response.json()) // Parse the JSON response body
+          .then(data => {
+            if (data == 'Not Found'){
+                setError(data);
+            }else{
+              console.log('Success:', data); // Access the data here
+              // Transform and set milestones from API response
+              const transformedMilestones = transformApiResponseToMilestones(data);
+              setMilestones(transformedMilestones);
+              setPlanOverview(data.overview);
+            }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              setError(error.message);
+          });
+      
+
+          
+      // API response will be handled above in the .then() block
+      
+    } catch (error) {
+      console.error('Error generating milestone plan:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateCareerPlan = async () => {
     // try {
       const requestData = {
         user_profile: {
@@ -79,6 +120,7 @@ const Paths = () => {
       })
       .catch(error => {
           console.error('Error:', error);
+          setError(error.message);
       });
       
     //   if (!response.ok) {
@@ -97,45 +139,71 @@ const Paths = () => {
   };
 
   useEffect(() => {
+
+    generateMilestonePlan();
     generateCareerPlan();
   }, []);
 
   // Transform API response to display format
-  const transformMilestoneToPathway = (milestone, index) => {
+  const transformApiResponseToMilestones = (apiResponse) => {
+    if (!apiResponse || !apiResponse.milestones) {
+      return [];
+    }
+
     const iconMap = {
-      'skill_development': Code,
-      'certification': TrendingUp,
-      'networking': Analytics,
-      'portfolio': Cloud,
-      'job_application': Security,
-      'education': Code,
-      'financial': Analytics,
-      'experience': TrendingUp
+      'Foundation Phase': Code,
+      'Development Phase': TrendingUp,
+      'Implementation Phase': Cloud,
+      'Mastery Phase': Analytics,
+      'Portfolio': Cloud,
+      'Networking': Analytics,
+      'Job Search': Security,
+      'Experience': Code
     };
     
     const colorMap = {
       'high': 'error',
-      'medium': 'warning',
+      'medium': 'warning', 
       'low': 'success'
     };
-    
-    return {
-      id: milestone.id,
-      timeRange: `${milestone.estimated_duration_weeks} weeks`,
-      title: milestone.title,
-      icon: iconMap[milestone.type] || Code,
-      color: colorMap[milestone.priority] || 'primary',
-      status: milestone.status,
-      shortDescription: milestone.description.substring(0, 100) + '...',
-      detailedDescription: milestone.description,
-      skills: milestone.success_criteria || [],
-      deliverables: milestone.success_criteria || [],
-      resources: milestone.resources?.map(r => r.name || r.url || 'Resource') || []
-    };
+
+    // Convert milestones object to array and sort by timeframe
+    const milestoneArray = Object.entries(apiResponse.milestones).map(([timeKey, milestone]) => {
+      const details = milestone.details || milestone;
+      
+      return {
+        id: milestone.milestone_id || timeKey,
+        timeRange: milestone.timeframe ? milestone.timeframe.replace('_', ' ') : timeKey.replace('_', ' '),
+        title: milestone.title || details.title,
+        icon: iconMap[milestone.title] || Code,
+        color: colorMap[details.priority_level] || 'primary',
+        status: milestone.status || 'pending',
+        shortDescription: milestone.overview || details.description?.substring(0, 100) + '...',
+        detailedDescription: details.description || milestone.overview,
+        keyObjectives: details.key_objectives || [],
+        successMetrics: details.success_metrics || [],
+        recommendedActions: details.recommended_actions || [],
+        resources: details.resources || [],
+        potentialChallenges: details.potential_challenges || [],
+        budgetEstimate: details.budget_estimate || 0,
+        timelineWeeks: details.timeline_weeks || 4,
+        completionStatus: milestone.completion_status || 0
+      };
+    });
+
+    // Sort by timeframe order
+    const timeframeOrder = ['1_month', '3_months', '1_year', '5_years'];
+    milestoneArray.sort((a, b) => {
+      const aIndex = timeframeOrder.findIndex(t => a.id.includes(t) || a.timeRange.includes(t));
+      const bIndex = timeframeOrder.findIndex(t => b.id.includes(t) || b.timeRange.includes(t));
+      return aIndex - bIndex;
+    });
+
+    return milestoneArray;
   };
   
   const generatePersonalizedMarkdown = () => {
-    if (!careerPlan) {
+    if (!planOverview) {
       return `## Generating Your Personalized Career Insights...
 
 Please wait while we analyze your profile and create a customized career transition plan.
@@ -150,7 +218,28 @@ Please wait while we analyze your profile and create a customized career transit
 
 Your personalized insights will appear here once the plan is generated.`;
     }
-    return careerPlan
+    
+    return `## ${planOverview.summary}
+
+### Key Focus Areas
+${planOverview.key_focus_areas?.map(area => `- ${area}`).join('\n') || ''}
+
+### Timeline
+**Estimated Duration:** ${planOverview.estimated_timeline}
+
+### Success Probability
+${planOverview.success_probability}
+
+### Market Outlook
+${planOverview.market_outlook}
+
+### Salary Projections
+- **Entry Level:** ${planOverview.salary_projection?.entry || 'TBD'}
+- **Mid Level:** ${planOverview.salary_projection?.mid || 'TBD'}
+- **Senior Level:** ${planOverview.salary_projection?.senior || 'TBD'}
+
+### Critical Skills to Develop
+${planOverview.critical_skills_gap?.map(skill => `- ${skill}`).join('\n') || ''}`;
   };
 
   const handleStepClick = (step) => {
@@ -166,7 +255,7 @@ Your personalized insights will appear here once the plan is generated.`;
   // Refresh handler to regenerate plan
   const handleRefresh = (e, step) => {
     e.stopPropagation();
-    generateCareerPlan();
+    generateMilestonePlan();
   };
 
   const getStatusColor = (status) => {
@@ -276,10 +365,10 @@ Your personalized insights will appear here once the plan is generated.`;
           </Box>
         )}
 
-        {true && (
+        {milestones.length > 0 && (
           <Box sx={{ mb: 8 }}>
             <Stepper orientation="vertical" sx={{ pl: 2 }}>
-              {[].map((step, index) => (
+              {milestones.map((step, index) => (
                 <Step key={step.id} active={true} sx={{ mb: 2 }}>
                   <StepLabel
                     StepIconComponent={() => {
@@ -349,7 +438,7 @@ Your personalized insights will appear here once the plan is generated.`;
                       </CardContent>
                     </Card>
                   </StepLabel>
-                  {index < [].length - 1 && (
+                  {index < milestones.length - 1 && (
                     <StepContent sx={{ ml: 3, borderLeft: '2px solid', borderColor: 'grey.300' }}>
                       <Box sx={{ height: 20 }} />
                     </StepContent>
@@ -438,12 +527,12 @@ Your personalized insights will appear here once the plan is generated.`;
               <Grid container spacing={3}>
                 <Grid item xs={12} md={4}>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    Key Skills
+                    Key Objectives
                   </Typography>
                   <Stack spacing={1}>
-                    {selectedStep.skills.map((skill, index) => (
+                    {selectedStep.keyObjectives.map((objective, index) => (
                       <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                        • {skill}
+                        • {objective}
                       </Typography>
                     ))}
                   </Stack>
@@ -451,30 +540,88 @@ Your personalized insights will appear here once the plan is generated.`;
                 
                 <Grid item xs={12} md={4}>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    Deliverables
+                    Success Metrics
                   </Typography>
                   <Stack spacing={1}>
-                    {selectedStep.deliverables.map((item, index) => (
+                    {selectedStep.successMetrics.map((metric, index) => (
                       <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                        • {item}
+                        • {metric}
                       </Typography>
                     ))}
                   </Stack>
                 </Grid>
                 
                 <Grid item xs={12} md={4}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                    Recommended Actions
+                  </Typography>
+                  <Stack spacing={1}>
+                    {selectedStep.recommendedActions.map((action, index) => (
+                      <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                        • {action}
+                      </Typography>
+                    ))}
+                  </Stack>
+                </Grid>
+              </Grid>
+              
+              <Divider sx={{ my: 3 }} />
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                     Resources
                   </Typography>
                   <Stack spacing={1}>
                     {selectedStep.resources.map((resource, index) => (
                       <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
-                        • {resource}
+                        • {typeof resource === 'string' ? resource : resource.name}
+                      </Typography>
+                    ))}
+                  </Stack>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                    Potential Challenges
+                  </Typography>
+                  <Stack spacing={1}>
+                    {selectedStep.potentialChallenges.map((challenge, index) => (
+                      <Typography key={index} variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                        • {challenge}
                       </Typography>
                     ))}
                   </Stack>
                 </Grid>
               </Grid>
+              
+              {(selectedStep.budgetEstimate > 0 || selectedStep.timelineWeeks) && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+                  <Grid container spacing={3}>
+                    {selectedStep.budgetEstimate > 0 && (
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                          Budget Estimate
+                        </Typography>
+                        <Typography variant="body2">
+                          ${selectedStep.budgetEstimate}
+                        </Typography>
+                      </Grid>
+                    )}
+                    {selectedStep.timelineWeeks && (
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                          Timeline
+                        </Typography>
+                        <Typography variant="body2">
+                          {selectedStep.timelineWeeks} weeks
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                </>
+              )}
             </DialogContent>
             
             <DialogActions sx={{ p: 3, pt: 1 }}>

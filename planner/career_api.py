@@ -29,7 +29,7 @@ planner = LLMCareerPlanner()
 class UserProfile(BaseModel):
     interests_values: str = Field(..., description="Professional interests, personal values, and motivations")
     work_experience: str = Field(..., description="Current role, past roles, and relevant work history")
-    circumstances: str = Field(..., description="Financial situation, time constraints, location preferences, and other personal circumstances")
+    circumstances: str = Field(..., description="Financial situation, time constraints, and other personal circumstances")
     skills: str = Field(..., description="Current technical and soft skills, certifications, and competencies")
     goals: str = Field(..., description="Career goals, aspirations, and desired outcomes")
     
@@ -46,11 +46,7 @@ class UserProfile(BaseModel):
 
 class CareerPlanRequest(BaseModel):
     user_profile: UserProfile
-    target_role: str = Field(..., description="Desired role to transition to")
-    target_industry: str = Field(default="Technology", description="Target industry")
-    location: Optional[str] = Field(default="Remote", description="Preferred work location")
-    timeline_months: Optional[int] = Field(default=9, description="Preferred timeline in months")
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -60,11 +56,7 @@ class CareerPlanRequest(BaseModel):
                     "circumstances": "Can handle 3-month income reduction, have savings. Prefer remote work. Available for evening courses. No relocation constraints",
                     "skills": "Python, JavaScript, SQL, Git, React, Node.js, Problem-solving, Team collaboration",
                     "goals": "Transition to Data Science role within 9 months. Focus on ML projects. Target salary increase of 20%. Work at innovative tech company"
-                },
-                "target_role": "Data Scientist",
-                "target_industry": "Technology",
-                "location": "Remote",
-                "timeline_months": 9
+                }
             }
         }
 
@@ -93,8 +85,6 @@ class MarketInsights(BaseModel):
 
 class CareerPlanResponse(BaseModel):
     user_id: str
-    target_role: str
-    target_industry: str
     current_role: str
     plan_duration_months: int
     milestones: List[MilestoneResponse]
@@ -133,8 +123,6 @@ def convert_career_plan_to_response(plan: CareerPlan) -> CareerPlanResponse:
     
     return CareerPlanResponse(
         user_id=plan.user_id,
-        target_role=plan.target_role,
-        target_industry=plan.target_industry,
         current_role=plan.current_role,
         plan_duration_months=plan.plan_duration_months,
         milestones=milestones_response,
@@ -166,10 +154,6 @@ async def generate_career_plan(request: CareerPlanRequest):
     Generate a comprehensive career transition plan using AI and real-time market data.
     
     - **user_profile**: Complete user profile including skills, goals, and constraints
-    - **target_role**: Desired role to transition to (e.g., "Data Scientist")
-    - **target_industry**: Target industry (default: "Technology")
-    - **location**: Preferred work location (default: "Remote")
-    - **timeline_months**: Preferred timeline in months (default: 9)
     """
     try:
         # Convert request to dictionary format
@@ -180,16 +164,12 @@ async def generate_career_plan(request: CareerPlanRequest):
             "skills": request.user_profile.skills,
             "goals": request.user_profile.goals
         }
-        
+        # The target role is now inferred from user goals, not passed explicitly
         # Generate plan using LLM as markdown
         markdown_plan = planner.generate_career_plan_markdown(
-            user_data=user_data,
-            target_role=request.target_role,
-            target_industry=request.target_industry
+            user_data=user_data
         )
-        
         return {"markdown": markdown_plan}
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate career plan: {str(e)}")
 
@@ -317,7 +297,7 @@ async def validate_user_profile(profile: UserProfile):
             "recommended_next_steps": [
                 "Complete profile if needed",
                 "Generate career transition plan",
-                "Review market insights for target role"
+                "Review market insights for your intended direction"
             ]
         }
         

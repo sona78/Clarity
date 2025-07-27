@@ -219,9 +219,6 @@ class LLMCareerPlanner:
     def generate_career_plan_markdown(self, user_data: Dict[str, Any]) -> str:
         """Generate career plan as markdown text using OpenAI LLM"""
         
-        # Gather current market data
-        market_intelligence = self.gather_market_intelligence(target_role, target_industry)
-        
         # Create prompt for markdown generation
         prompt = f"""
         Create a comprehensive career transition plan in markdown format for the following profile:
@@ -232,12 +229,7 @@ class LLMCareerPlanner:
         - Circumstances: {user_data.get('circumstances', '')}
         - Skills: {user_data.get('skills', '')}
         - Goals: {user_data.get('goals', '')}
-        
-        **Target Role:** {target_role}
-        **Target Industry:** {target_industry}
-        
-        **Market Intelligence:**
-        {json.dumps(market_intelligence, indent=2) if market_intelligence else "No market data available"}
+
         
         Generate a detailed markdown career transition plan with the following sections:
         1. Executive Summary
@@ -268,15 +260,13 @@ class LLMCareerPlanner:
         except Exception as e:
             print(f"Error calling OpenAI API: {e}")
             # Fallback markdown plan
-            return self.generate_fallback_markdown_plan(user_data, target_role, target_industry)
+            return self.generate_fallback_markdown_plan(user_data)
     
-    def generate_fallback_markdown_plan(self, user_data: Dict[str, Any], target_role: str, target_industry: str) -> str:
+    def generate_fallback_markdown_plan(self, user_data: Dict[str, Any]) -> str:
         """Generate a basic markdown plan when API fails"""
         return f"""
-# Career Transition Plan: {target_role}
+# Career Transition Plan: 
 
-## Executive Summary
-Transitioning from current role to **{target_role}** in the **{target_industry}** industry.
 
 ## Current Profile
 - **Skills:** {user_data.get('skills', 'Not specified')}
@@ -285,7 +275,7 @@ Transitioning from current role to **{target_role}** in the **{target_industry}*
 
 ## Action Plan
 1. **Skill Development** (Weeks 1-12)
-   - Identify key skills for {target_role}
+   - Identify key skills
    - Enroll in relevant courses
    
 2. **Portfolio Building** (Weeks 4-16)
@@ -293,11 +283,11 @@ Transitioning from current role to **{target_role}** in the **{target_industry}*
    - Document work experience
    
 3. **Networking** (Weeks 8-20)
-   - Connect with professionals in {target_industry}
+   - Connect with professionals
    - Attend industry events
 
 4. **Job Search** (Weeks 16-24)
-   - Apply to {target_role} positions
+   - Apply to positions
    - Prepare for interviews
 
 ## Next Steps
@@ -380,7 +370,7 @@ Format the response as JSON with this structure:
 """
         return prompt
     
-    def parse_llm_response(self, llm_response: str, user_data: Dict[str, Any], target_role: str, target_industry: str, market_data: str) -> CareerPlan:
+    def parse_llm_response(self, llm_response: str, user_data: Dict[str, Any], market_data: str) -> CareerPlan:
         """Parse LLM response into structured CareerPlan object"""
         
         try:

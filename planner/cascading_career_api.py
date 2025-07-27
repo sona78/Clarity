@@ -641,22 +641,28 @@ async def root():
         }
     }
 
-@app.post("/api/v3/generate-plan", response_model=CareerPlan)
+@app.post("/api/v3/generate-plan/{username}", response_model=CareerPlan)
 async def generate_cascading_plan(username: str):
     """Generate initial career plan with cascading milestone structure"""
     try:
         # Get user data from database
         user_profile = getUserInformationFromDB(username)
+        print(f"Retrieved user profile: {user_profile}")
+        
         if not user_profile:
             raise HTTPException(status_code=404, detail=f"User {username} not found")
         
-        # # Extract target role and industry from user profile goals/interests
-        # target_role = user_profile.goals.split(',')[0].strip() if user_profile.goals else "Career Transition"
-        # target_industry = "Technology"  # Default, could be inferred from goals/interests
+        # Extract target role and industry from user profile goals/interests
+        target_role = user_profile.goals.split(',')[0].strip() if user_profile.goals else "Career Transition"
+        target_industry = "Technology"  # Default, could be inferred from goals/interests
         
-        plan = manager.generate_initial_plan(user_profile, "", "")
+        print(f"Generating plan for {username}: role={target_role}, industry={target_industry}")
+        plan = manager.generate_initial_plan(user_profile, target_role, target_industry)
         return plan
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Error generating plan: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate plan: {str(e)}")
 
 @app.get("/api/v3/plan/{plan_id}", response_model=CareerPlan)

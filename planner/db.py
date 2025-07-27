@@ -34,3 +34,17 @@ def getUserInformationFromDB(username: str):
         )
 
         return user_profile
+    else:
+        # Return a default profile for users not in database
+        return UserProfile(
+            username=username,
+            interests_values="Passionate about technology and innovation. Values continuous learning, work-life balance, and making meaningful impact through technology",
+            work_experience="Currently working in business/operations role. Strong foundation in analytical thinking and problem-solving",
+            circumstances="Can handle moderate income changes during transition. Prefer flexible learning schedule. Available for evening courses",
+            skills="Analytical thinking, Problem-solving, Communication, Project management, Business analysis",
+            goals="Transition to a technical role within 12-18 months. Focus on building practical skills. Target career growth and higher earning potential"
+        )
+
+    
+if __name__ == "__main__":
+    print(getUserInformationFromDB("sona.om78@gmail.com"))
