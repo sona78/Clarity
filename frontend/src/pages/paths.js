@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Container, 
   Grid, 
   Card, 
-  CardContent, 
-  CardActions,
+  CardContent,
   Box,
   Stack,
   Typography,
@@ -19,7 +18,10 @@ import {
   Step,
   StepLabel,
   StepContent,
-  IconButton
+  IconButton,
+  TextField,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { 
   TrendingUp,
@@ -36,117 +38,65 @@ import Navigation from '../components/Navigation';
 import PageNavigation from '../components/PageNavigation';
 import { CHAT_ROUTE } from "../App";
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '../lib/supabase'
 
 const Paths = () => {
   const [selectedStep, setSelectedStep] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  
+  // Cascade update modal state
+  const [cascadeModalOpen, setCascadeModalOpen] = useState(false);
+  const [selectedStepForCascade, setSelectedStepForCascade] = useState(null);
+  const [userThoughts, setUserThoughts] = useState('');
+  const [cascadeLoading, setCascadeLoading] = useState(false);
+  const [cascadeError, setCascadeError] = useState(null);
+  const [cascadeSuccess, setCascadeSuccess] = useState(false);
 
-  const [careerPlan, setCareerPlan] = useState(null);
   const [planOverview, setPlanOverview] = useState(null);
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Store user email from supabase
+  const [userEmail, setUserEmail] = useState(null);
 
-  const generateMilestonePlan = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-        const username = "sona.om78@gmail.com";
-        const response = await fetch(`http://localhost:8000/api/v3/generate-plan/${username}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          })
-          .then(response => response.json()) // Parse the JSON response body
-          .then(data => {
-            if (data == 'Not Found'){
-                setError(data);
-            }else{
-              console.log('Success:', data); // Access the data here
-              // Transform and set milestones from API response
-              const transformedMilestones = transformApiResponseToMilestones(data);
-              setMilestones(transformedMilestones);
-              setPlanOverview(data.overview);
-            }
-          })
-          .catch(error => {
-              console.error('Error:', error);
-              setError(error.message);
-          });
-      
-
-          
-      // API response will be handled above in the .then() block
-      
-    } catch (error) {
-      console.error('Error generating milestone plan:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateCareerPlan = async () => {
-    // try {
-      const requestData = {
-        user_profile: {
-          interests_values: "Passionate about technology and innovation. Values continuous learning, work-life balance, and making meaningful impact through technology",
-          work_experience: "Currently working in business/operations role. Strong foundation in analytical thinking and problem-solving",
-          circumstances: "Can handle moderate income changes during transition. Prefer flexible learning schedule. Available for evening courses",
-          skills: "Analytical thinking, Problem-solving, Communication, Project management, Business analysis",
-          goals: "Transition to a technical role within 12-18 months. Focus on building practical skills. Target career growth and higher earning potential"
-        },
-        target_role: "Full-Stack Developer",
-        target_industry: "Technology",
-        location: "Remote",
-        timeline_months: 12
-      };
-      console.log(requestData)
-
-      const response = await fetch('http://localhost:8000/api/v1/generate-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      })
-      .then(response => response.json()) // Parse the JSON response body
-      .then(data => {
-          console.log('Success:', data); // Access the data here
-          setCareerPlan(data.markdown)
-      })
-      .catch(error => {
-          console.error('Error:', error);
-          setError(error.message);
-      });
-      
-    //   if (!response.ok) {
-    //     throw new Error(`HTTP error! status: ${response.status}`);
-    //   }
-      
-    //   const data = await response.json();
-    //   setCareerPlan(data);
-    //   console.log('Generated career plan:', data);
-    // } catch (error) {
-    //   console.error('Error generating career plan:', error);
-    //   setError(error.message);
-    // } finally {
-    //   setLoading(false);
-    // }
-  };
-
+  // Fetch user email from supabase auth
   useEffect(() => {
-
-    generateMilestonePlan();
-    generateCareerPlan();
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email) {
+        setUserEmail(user.email);
+      } else {
+        setUserEmail(null);
+      }
+    };
+    fetchUser();
   }, []);
+
+  // Helper function to get timeframe from step
+  const getTimeframeFromStep = (step) => {
+    if (step.timeRange.includes('1 month') || step.id.includes('1_month')) return '1_month';
+    if (step.timeRange.includes('3 months') || step.id.includes('3_months')) return '3_months';
+    if (step.timeRange.includes('1 year') || step.id.includes('1_year')) return '1_year';
+    if (step.timeRange.includes('5 years') || step.id.includes('5_years')) return '5_years';
+    return '1_month'; // fallback
+  };
 
   // Transform API response to display format
   const transformApiResponseToMilestones = (apiResponse) => {
-    if (!apiResponse || !apiResponse.milestones) {
+    if (!apiResponse) {
+      return [];
+    }
+    
+    // Handle both old structure (apiResponse.milestones) and new structure (direct milestone fields)
+    const milestonesData = apiResponse.milestones || {
+      '1_month': apiResponse.milestone_1,
+      '3_months': apiResponse.milestone_2,
+      '1_year': apiResponse.milestone_3,
+      '5_years': apiResponse.milestone_4
+    };
+    
+    if (!milestonesData) {
       return [];
     }
 
@@ -168,7 +118,9 @@ const Paths = () => {
     };
 
     // Convert milestones object to array and sort by timeframe
-    const milestoneArray = Object.entries(apiResponse.milestones).map(([timeKey, milestone]) => {
+    const milestoneArray = Object.entries(milestonesData)
+      .filter(([timeKey, milestone]) => milestone !== null && milestone !== undefined)
+      .map(([timeKey, milestone]) => {
       const details = milestone.details || milestone;
       
       return {
@@ -201,8 +153,111 @@ const Paths = () => {
 
     return milestoneArray;
   };
-  
+
+  // Generate milestone plan, using userEmail from supabase
+  const generateMilestonePlan = useCallback(async () => {
+    if (!userEmail) {
+      // Don't try to fetch if userEmail is not loaded yet
+      return;
+    }
+    setLoading(true);
+    setError(null);
+
+    try {
+      await fetch(`http://localhost:8000/api/v3/generate-plan/${encodeURIComponent(userEmail)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Transform and set milestones from API response
+        const transformedMilestones = transformApiResponseToMilestones(data);
+        setMilestones(transformedMilestones);
+        setPlanOverview(data.overview);
+      })
+      .catch(error => {
+        setError(error.message);
+      });
+
+      // API response will be handled above in the .then() block
+
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [userEmail]);
+
+  // Cascade update function, using userEmail from supabase
+  const handleCascadeUpdate = async () => {
+    if (!userThoughts.trim() || !selectedStepForCascade || !userEmail) return;
+    
+    setCascadeLoading(true);
+    setCascadeError(null);
+    setCascadeSuccess(false);
+
+    try {
+      const timeframe = getTimeframeFromStep(selectedStepForCascade);
+      
+      const response = await fetch(
+        `http://localhost:8000/api/v3/milestone/${timeframe}/${encodeURIComponent(userEmail)}/update-cascade`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_thoughts: userThoughts,
+            context: `User wants to update ${selectedStepForCascade.title} milestone`
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform and update milestones from the updated plan
+      const transformedMilestones = transformApiResponseToMilestones(data.updated_plan);
+      setMilestones(transformedMilestones);
+      setPlanOverview(data.updated_plan.overview);
+      
+      setCascadeSuccess(true);
+      
+      // Auto-close modal after success
+      setTimeout(() => {
+        handleCloseCascadeModal();
+      }, 2000);
+      
+    } catch (error) {
+      setCascadeError(error.message);
+    } finally {
+      setCascadeLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userEmail) {
+      generateMilestonePlan();
+    }
+  }, [userEmail, generateMilestonePlan]);
+
   const generatePersonalizedMarkdown = () => {
+    if (error) {
+      return `## Unable to Generate Career Insights
+
+There was an error loading your career plan. Please try refreshing the page or contact support if the issue persists.`;
+    }
+    
     if (!planOverview) {
       return `## Generating Your Personalized Career Insights...
 
@@ -252,10 +307,23 @@ ${planOverview.critical_skills_gap?.map(skill => `- ${skill}`).join('\n') || ''}
     setSelectedStep(null);
   };
 
-  // Refresh handler to regenerate plan
-  const handleRefresh = (e, step) => {
+  // Cascade modal handlers
+  const handleOpenCascadeModal = (e, step) => {
     e.stopPropagation();
-    generateMilestonePlan();
+    setSelectedStepForCascade(step);
+    setCascadeModalOpen(true);
+    setUserThoughts('');
+    setCascadeError(null);
+    setCascadeSuccess(false);
+  };
+
+  const handleCloseCascadeModal = () => {
+    setCascadeModalOpen(false);
+    setSelectedStepForCascade(null);
+    setUserThoughts('');
+    setCascadeError(null);
+    setCascadeSuccess(false);
+    setCascadeLoading(false);
   };
 
   const getStatusColor = (status) => {
@@ -357,10 +425,23 @@ ${planOverview.critical_skills_gap?.map(skill => `- ${skill}`).join('\n') || ''}
         )}
         
         {error && (
-          <Box sx={{ textAlign: 'center', mb: 4, p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
-            <Typography variant="h6" color="error">Error: {error}</Typography>
-            <Button onClick={generateCareerPlan} variant="contained" sx={{ mt: 1 }}>
-              Retry
+          <Box sx={{ textAlign: 'center', mb: 4, p: 3, bgcolor: 'error.light', borderRadius: 2 }}>
+            <Typography variant="h6" color="error" gutterBottom>
+              Failed to Load Career Plan
+            </Typography>
+            <Typography variant="body2" color="error" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+            <Button 
+              onClick={() => {
+                setError(null);
+                generateMilestonePlan();
+              }} 
+              variant="contained" 
+              color="error"
+              sx={{ mt: 1 }}
+            >
+              Try Again
             </Button>
           </Box>
         )}
@@ -418,9 +499,9 @@ ${planOverview.critical_skills_gap?.map(skill => `- ${skill}`).join('\n') || ''}
                             </Typography>
                           </Box>
                           <IconButton
-                            aria-label="Refresh"
+                            aria-label="Update with thoughts"
                             size="small"
-                            onClick={e => handleRefresh(e, step)}
+                            onClick={e => handleOpenCascadeModal(e, step)}
                             sx={{
                               color: getStatusColor(step.status) + '.main',
                               backgroundColor: 'grey.100',
@@ -640,6 +721,99 @@ ${planOverview.critical_skills_gap?.map(skill => `- ${skill}`).join('\n') || ''}
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Cascade Update Modal */}
+      <Dialog 
+        open={cascadeModalOpen} 
+        onClose={handleCloseCascadeModal} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2 }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Box>
+              <Typography variant="h5" component="h2" sx={{ fontWeight: 600 }}>
+                Update Milestone with Your Thoughts
+              </Typography>
+              {selectedStepForCascade && (
+                <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1 }}>
+                  {selectedStepForCascade.title} ({selectedStepForCascade.timeRange})
+                </Typography>
+              )}
+            </Box>
+            <Button onClick={handleCloseCascadeModal} color="inherit">
+              <Close />
+            </Button>
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body1" paragraph sx={{ mb: 3 }}>
+            Share your thoughts about this milestone. What would you like to change? 
+            Any concerns about the timeline, objectives, or approach? Your input will automatically 
+            update this milestone and all subsequent ones to maintain consistency.
+          </Typography>
+          
+          {cascadeError && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {cascadeError}
+            </Alert>
+          )}
+          
+          {cascadeSuccess && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              Successfully updated milestone and cascaded changes to subsequent milestones!
+            </Alert>
+          )}
+          
+          <TextField
+            fullWidth
+            multiline
+            rows={6}
+            label="Your thoughts and feedback"
+            placeholder="For example: 'I think the timeline is too aggressive, I need more time to learn the fundamentals' or 'I want to focus more on practical projects rather than theory'"
+            value={userThoughts}
+            onChange={(e) => setUserThoughts(e.target.value)}
+            disabled={cascadeLoading || cascadeSuccess}
+            sx={{ mb: 2 }}
+          />
+          
+          {selectedStepForCascade && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                This will update:
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • <strong>{selectedStepForCascade.title}</strong> milestone directly based on your thoughts
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • All subsequent milestones will be automatically adjusted to align with your changes
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button 
+            onClick={handleCloseCascadeModal} 
+            variant="outlined"
+            disabled={cascadeLoading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCascadeUpdate}
+            variant="contained"
+            disabled={!userThoughts.trim() || cascadeLoading || cascadeSuccess}
+            startIcon={cascadeLoading ? <CircularProgress size={16} /> : <RefreshIcon />}
+          >
+            {cascadeLoading ? 'Updating...' : 'Update & Cascade'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <PageNavigation />

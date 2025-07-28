@@ -2,3 +2,6 @@ llm_planner/env.yaml
 .env
 /planner/env.yaml
 *.pyc
+.vercel
+/api/.claude
+api/env.yaml

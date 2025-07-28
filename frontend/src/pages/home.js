@@ -20,7 +20,7 @@ import Navigation from '../components/Navigation';
 import { CHAT_ROUTE, PATHS_ROUTE } from "../App";
 
 const Home = () => {
-  const { user, supabase } = useSupabase();
+  const { user } = useSupabase();
 
   return (
     <>

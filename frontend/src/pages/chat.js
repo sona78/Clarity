@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 import { 
   Container, 
@@ -20,7 +19,6 @@ import {
 } from '@mui/material';
 import { Send, CheckCircle, Person, Work, Psychology, School, Flag } from '@mui/icons-material';
 import Navigation from '../components/Navigation';
-import PageNavigation from '../components/PageNavigation';
 
 const Chat = () => {
   const { user, db } = useSupabase();
@@ -29,13 +27,12 @@ const Chat = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [currentCategory, setCurrentCategory] = useState(0);
   const [userResponses, setUserResponses] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [messageIdCounter, setMessageIdCounter] = useState(1);
 
   // Define the 5 categories and their questions
-  const categories = [
+  const categories = useMemo(() => [
     {
       name: 'Interests + Values',
       icon: <Psychology />,
@@ -82,18 +79,11 @@ const Chat = () => {
         'What makes you feel proud of yourself?',
       ]
     }
-  ];
+  ], []);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const chatBoxRef = useRef(null);
 
-  useEffect(() => {
-    // Optional: Log Supabase user for debugging
-    if (user) {
-      console.log('Supabase user:', user);
-      console.log('Supabase user ID:', user.id);
-    }
-  }, [user]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -115,28 +105,28 @@ const Chat = () => {
       setMessages([welcomeMessage]);
       setMessageIdCounter(2); // Start next message at ID 2
     }
-  }, []);
+  }, [categories, messages.length]);
 
-  const askNextQuestion = () => {
-    // Use the current state values to get the correct question
-    const category = categories[currentCategory];
-    const question = category.questions[currentQuestionIndex];
+//   const askNextQuestion = () => {
+//     // Use the current state values to get the correct question
+//     const category = categories[currentCategory];
+//     const question = category.questions[currentQuestionIndex];
     
-    const questionMessage = {
-      id: messageIdCounter,
-      text: question,
-      sender: "assistant",
-      timestamp: new Date(),
-      category: category.name,
-      questionIndex: currentQuestionIndex
-    };
+//     const questionMessage = {
+//       id: messageIdCounter,
+//       text: question,
+//       sender: "assistant",
+//       timestamp: new Date(),
+//       category: category.name,
+//       questionIndex: currentQuestionIndex
+//     };
     
-    setMessages(prev => [...prev, questionMessage]);
-    setMessageIdCounter(prev => prev + 1);
-  };
+//     setMessages(prev => [...prev, questionMessage]);
+//     setMessageIdCounter(prev => prev + 1);
+//   };
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!inputMessage.trim()) return;
 
     const userMessage = {
@@ -358,7 +348,6 @@ const Chat = () => {
         "Goals": compileCategoryResponses('Goals')
       };
 
-      console.log('Saving user data:', userData);
       await db.saveUserInformation(userData);
       
       setSaveStatus('success');
@@ -374,7 +363,6 @@ const Chat = () => {
       setMessageIdCounter(prev => prev + 1);
       
     } catch (error) {
-      console.error('Error saving user information:', error);
       setSaveStatus('error');
       
       const errorMessage = {
@@ -424,6 +412,19 @@ const Chat = () => {
       key.includes(category.name.toLowerCase().replace(/[^a-z]/g, '_'))
     ).length;
     return (answeredInCategory / category.questions.length) * 100;
+  };
+
+  // Handler for Enter key in TextField
+  const handleInputKeyDown = (e) => {
+    if (
+      e.key === 'Enter' &&
+      !e.shiftKey && // allow Shift+Enter for newline
+      !isSaving &&
+      inputMessage.trim()
+    ) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -578,6 +579,7 @@ const Chat = () => {
                         maxRows={3}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
                         placeholder="Type your response here..."
                         disabled={isSaving}
                         variant="outlined"

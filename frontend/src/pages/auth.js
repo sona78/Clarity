@@ -17,7 +17,6 @@ import {
 import { 
   Email, 
   Lock, 
-  Person,
   Login as LoginIcon,
   PersonAdd as SignUpIcon
 } from '@mui/icons-material';
@@ -48,7 +47,7 @@ const Auth = () => {
     setSuccess('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -73,7 +72,7 @@ const Auth = () => {
     setSuccess('');
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {

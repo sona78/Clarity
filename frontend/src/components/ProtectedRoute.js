@@ -3,7 +3,7 @@ import { useSupabase } from '../contexts/SupabaseContext';
 import { Box, CircularProgress, Typography, Button } from '@mui/material';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading, supabase } = useSupabase();
+  const { user, loading } = useSupabase();
 
   if (loading) {
     return (

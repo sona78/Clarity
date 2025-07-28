@@ -24,7 +24,6 @@ export const SupabaseProvider = ({ children }) => {
         setSession(session);
         setUser(session?.user ?? null);
       } catch (error) {
-        console.error('Error getting initial session:', error);
       } finally {
         setLoading(false);
       }
