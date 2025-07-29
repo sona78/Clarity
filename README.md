@@ -1,6 +1,6 @@
 # Clarity: Reimagining the Future of Work
 
-Visit: https://clarity-4r4e9s4sm-sona78s-projects.vercel.app/
+Visit: https://clarity-chi.vercel.app
 
 ## About the Project
 
