@@ -108,12 +108,11 @@ def storeUserPlanInDB(plan: CareerPlan):
             "milestone_4": plan.milestone_4.model_dump() if plan.milestone_4 else None
         }
 
-        # Try to insert first, if it fails due to conflict, update instead
-        try:
+        # Try to update first, if no entry is updated, then insert
+        data = supabase.table(CAREER_PLANS).update(plan_db).eq("username", plan.user_id).execute()
+        if not data.data or (isinstance(data.data, list) and len(data.data) == 0):
+            # No rows updated, so insert instead
             data = supabase.table(CAREER_PLANS).insert(plan_db).execute()
-        except Exception as insert_error:
-            # If insert fails (likely due to existing record), try update instead
-            data = supabase.table(CAREER_PLANS).update(plan_db).eq("username", plan.user_id).execute()
     except Exception as e:
         print(f"Unable to store Career Plan to db {e}")
 
