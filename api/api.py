@@ -12,6 +12,7 @@ from db import getUserInformationFromDB, getUserPlanFromDB, storeUserPlanInDB
 from plan_manager import CascadingPlanManager
 from models.milestone import *
 from models.user import *
+from utils.timestamp_utils import parse_timestamp, is_timestamp_newer
 
 app = FastAPI(
     title="Cascading Career Milestone API",
@@ -53,6 +54,8 @@ except Exception as e:
 
 
 manager = CascadingPlanManager()
+
+# Note: timestamp utilities now imported from utils.timestamp_utils
 
 # API Endpoints
 @app.get("/")
@@ -99,12 +102,19 @@ async def generate_cascading_plan(username: str):
     """Generate initial career plan with cascading milestone structure"""
     try:
         career_plan = getUserPlanFromDB(username)
-
-        if career_plan:
-            return career_plan
+        print(f"User Plan {career_plan}")
             
         user_profile = getUserInformationFromDB(username)
         print(f"Retrieved user profile: {user_profile}")
+
+        
+        # Check if we should return existing plan (only if both timestamps exist and plan is newer)
+        if career_plan and career_plan.last_updated and user_profile.last_updated:
+            if is_timestamp_newer(career_plan.last_updated, user_profile.last_updated):
+                print(f"Returning existing plan (plan: {career_plan.last_updated} > user: {user_profile.last_updated})")
+                return career_plan
+            else:
+                print(f"Generating new plan (plan: {career_plan.last_updated} <= user: {user_profile.last_updated})")
             
         if not user_profile:
             raise HTTPException(status_code=404, detail=f"User {username} not found")

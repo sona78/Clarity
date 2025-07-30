@@ -7,6 +7,7 @@ from models.milestone import *
 from models.user import *
 from clients import openai_client
 from prompts import create_career_plan_prompt
+from utils.timestamp_utils import get_current_timestamp
 
 
 # Note: Plan storage now handled by database functions in db.py
@@ -172,7 +173,7 @@ class CascadingPlanManager:
                 elif timeframe == "5_years":
                     plan.milestone_4 = updated_plan.milestone_4
                 
-            plan.last_updated = datetime.now().isoformat()
+            plan.last_updated = get_current_timestamp()
             
             storeUserPlanInDB(plan)
         
@@ -243,7 +244,7 @@ class CascadingPlanManager:
                 milestone_3=updated_milestones.get("1_year", plan.milestone_3),
                 milestone_4=updated_milestones.get("5_years", plan.milestone_4),
                 created_date=plan.created_date,
-                last_updated=datetime.now().isoformat(),
+                last_updated=get_current_timestamp(),
                 version=plan.version + 1
             )
             
@@ -320,7 +321,7 @@ class CascadingPlanManager:
                             dependencies=details_data.get('dependencies', []),
                             budget_estimate=details_data.get('budget_estimate', 0.0),
                             exa_research_topics=details_data.get('exa_research_topics', []),
-                            last_updated=datetime.now().isoformat(),
+                            last_updated=get_current_timestamp(),
                             # milestone 1 specific fields
                             daily_tasks=details_data.get('daily_tasks', []),
                             weekly_goals=details_data.get('weekly_goals', []),
@@ -329,7 +330,7 @@ class CascadingPlanManager:
                             immediate_tools=details_data.get('immediate_tools', [])
                         )
                         milestone_1 = Milestone1(
-                            milestone_id=f"{timeframe}_{datetime.now().strftime('%Y%m%d')}",
+                            milestone_id=f"{timeframe}_{get_current_timestamp().split('T')[0].replace('-', '')}",
                             title=m_data.get('title', f'{timeframe} milestone'),
                             overview=m_data.get('overview', ''),
                             details=milestone_detail
@@ -347,7 +348,7 @@ class CascadingPlanManager:
                             dependencies=details_data.get('dependencies', []),
                             budget_estimate=details_data.get('budget_estimate', 0.0),
                             exa_research_topics=details_data.get('exa_research_topics', []),
-                            last_updated=datetime.now().isoformat(),
+                            last_updated=get_current_timestamp(),
                             # milestone 2 specific fields
                             projects_to_complete=details_data.get('projects_to_complete', []),
                             certifications_target=details_data.get('certifications_target', []),
@@ -356,7 +357,7 @@ class CascadingPlanManager:
                             mentor_connections=details_data.get('mentor_connections', [])
                         )
                         milestone_2 = Milestone2(
-                            milestone_id=f"{timeframe}_{datetime.now().strftime('%Y%m%d')}",
+                            milestone_id=f"{timeframe}_{get_current_timestamp().split('T')[0].replace('-', '')}",
                             title=m_data.get('title', f'{timeframe} milestone'),
                             overview=m_data.get('overview', ''),
                             details=milestone_detail
@@ -374,7 +375,7 @@ class CascadingPlanManager:
                             dependencies=details_data.get('dependencies', []),
                             budget_estimate=details_data.get('budget_estimate', 0.0),
                             exa_research_topics=details_data.get('exa_research_topics', []),
-                            last_updated=datetime.now().isoformat(),
+                            last_updated=get_current_timestamp(),
                             # milestone 3 specific fields
                             career_targets=details_data.get('career_targets', []),
                             salary_expectations=details_data.get('salary_expectations', {}),
@@ -383,7 +384,7 @@ class CascadingPlanManager:
                             market_positioning=details_data.get('market_positioning', [])
                         )
                         milestone_3 = Milestone3(
-                            milestone_id=f"{timeframe}_{datetime.now().strftime('%Y%m%d')}",
+                            milestone_id=f"{timeframe}_{get_current_timestamp().split('T')[0].replace('-', '')}",
                             title=m_data.get('title', f'{timeframe} milestone'),
                             overview=m_data.get('overview', ''),
                             details=milestone_detail
@@ -401,7 +402,7 @@ class CascadingPlanManager:
                             dependencies=details_data.get('dependencies', []),
                             budget_estimate=details_data.get('budget_estimate', 0.0),
                             exa_research_topics=details_data.get('exa_research_topics', []),
-                            last_updated=datetime.now().isoformat(),
+                            last_updated=get_current_timestamp(),
                             # milestone 4 specific fields
                             vision_statement=details_data.get('vision_statement', ''),
                             financial_goals=details_data.get('financial_goals', {}),
@@ -411,14 +412,16 @@ class CascadingPlanManager:
                             legacy_projects=details_data.get('legacy_projects', [])
                         )
                         milestone_4 = Milestone4(
-                            milestone_id=f"{timeframe}_{datetime.now().strftime('%Y%m%d')}",
+                            milestone_id=f"{timeframe}_{get_current_timestamp().split('T')[0].replace('-', '')}",
                             title=m_data.get('title', f'{timeframe} milestone'),
                             overview=m_data.get('overview', ''),
                             details=milestone_detail
                         )
             
             # Create career plan
-            plan_id = f"plan_{user_profile.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            # Generate plan ID with current timestamp
+            timestamp_str = get_current_timestamp().replace(':', '').replace('-', '').replace('T', '_').split('.')[0]
+            plan_id = f"plan_{user_profile.username}_{timestamp_str}"
             
             plan = CareerPlan(
                 plan_id=plan_id,
@@ -428,8 +431,8 @@ class CascadingPlanManager:
                 milestone_2=milestone_2,
                 milestone_3=milestone_3,
                 milestone_4=milestone_4,
-                created_date=datetime.now().isoformat(),
-                last_updated=datetime.now().isoformat()
+                created_date=get_current_timestamp(),
+                last_updated=get_current_timestamp()
             )
             
             # Plan will be stored in database by the calling function

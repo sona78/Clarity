@@ -9,6 +9,8 @@ class UserProfile(BaseModel):
     circumstances: str = Field(..., description="Personal circumstances")
     skills: str = Field(..., description="Skills and competencies")
     goals: str = Field(..., description="Career goals and aspirations")
+    created_at: Optional[str] = Field(default=None, description="Timestamp when the profile was created")
+    last_updated: Optional[str] = Field(default=None, description="Timestamp when the profile was last updated")
 
 
 

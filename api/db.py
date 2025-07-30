@@ -3,6 +3,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from models.milestone import *
 from models.user import *
+from utils.timestamp_utils import get_current_timestamp
 
 load_dotenv('../.env')
 
@@ -16,6 +17,7 @@ USER_INFORMATION = 'User Information'
 def getUserPlanFromDB(username: str):
     user_data = {}
     try:
+        # Look up by username field (Career Plans table uses username, not user_id)
         response = supabase.table(CAREER_PLANS).select("*").eq("username", username).execute()
         if response.data:
             # Reconstruct milestone objects from stored data
@@ -96,9 +98,9 @@ def storeUserPlanInDB(plan: CareerPlan):
     try:
         plan_db = {
             "plan_id": plan.plan_id,
-            "username": plan.user_id,
+            "username": plan.user_id,  # Career Plans table uses username field
             "created_date": plan.created_date,
-            "last_updated": plan.last_updated,
+            "last_updated": get_current_timestamp(),
             "overview": plan.overview,
             "milestone_1": plan.milestone_1.model_dump() if plan.milestone_1 else None,
             "milestone_2": plan.milestone_2.model_dump() if plan.milestone_2 else None,
@@ -106,12 +108,18 @@ def storeUserPlanInDB(plan: CareerPlan):
             "milestone_4": plan.milestone_4.model_dump() if plan.milestone_4 else None
         }
 
-        data = supabase.table(CAREER_PLANS).insert(plan_db).execute()
+        # Try to insert first, if it fails due to conflict, update instead
+        try:
+            data = supabase.table(CAREER_PLANS).insert(plan_db).execute()
+        except Exception as insert_error:
+            # If insert fails (likely due to existing record), try update instead
+            data = supabase.table(CAREER_PLANS).update(plan_db).eq("username", plan.user_id).execute()
     except Exception as e:
         print(f"Unable to store Career Plan to db {e}")
 
 
 def getUserInformationFromDB(username: str):
+    # Look up by user_id (which contains the email) instead of username field
     response = supabase.table(USER_INFORMATION).select("*").eq("username", username).execute()
     
     if response.data:
@@ -121,7 +129,9 @@ def getUserInformationFromDB(username: str):
             work_experience=response.data[0]['Work Experience'],
             circumstances=response.data[0]['Circumstances'],
             skills=response.data[0]['Skills'],
-            goals=response.data[0]['Goals']
+            goals=response.data[0]['Goals'],
+            created_at=response.data[0].get('created_at'),
+            last_updated=response.data[0].get('last_updated')
         )
 
         return user_profile

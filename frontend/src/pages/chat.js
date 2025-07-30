@@ -84,7 +84,6 @@ const Chat = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const chatBoxRef = useRef(null);
 
-
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (chatBoxRef.current) {
@@ -99,7 +98,7 @@ const Chat = () => {
         id: 1,
         text: `Hello! I'm here to help you explore your career path. I'll ask you a series of questions across 5 key areas to better understand your situation and goals. Say hello, and lets get started!`,
         sender: "assistant",
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         category: categories[0].name
       };
       setMessages([welcomeMessage]);
@@ -107,24 +106,146 @@ const Chat = () => {
     }
   }, [categories, messages.length]);
 
-//   const askNextQuestion = () => {
-//     // Use the current state values to get the correct question
-//     const category = categories[currentCategory];
-//     const question = category.questions[currentQuestionIndex];
-    
-//     const questionMessage = {
-//       id: messageIdCounter,
-//       text: question,
-//       sender: "assistant",
-//       timestamp: new Date(),
-//       category: category.name,
-//       questionIndex: currentQuestionIndex
-//     };
-    
-//     setMessages(prev => [...prev, questionMessage]);
-//     setMessageIdCounter(prev => prev + 1);
-//   };
+  // Save user information after each question and append to state
+  const saveUserInformation = async (responses, appendSuccessMessage = false) => {
+    setIsSaving(true);
+    setSaveStatus('saving');
+    try {
+      if (!user) {
+        throw new Error('User must be logged in to save information');
+      }
 
+      // Merge with existing responses and check for duplicates
+      const mergedData = await mergeResponsesWithExisting(responses);
+
+      console.log('Merged user data:', mergedData);
+
+      // Check if we have any meaningful responses
+      const hasResponses = categories.some(category => {
+        const categoryData = mergedData[category.name];
+        if (!categoryData) return false;
+        try {
+          const parsed = JSON.parse(categoryData);
+          return Object.keys(parsed).length > 0;
+        } catch {
+          return false;
+        }
+      });
+      
+      if (!hasResponses) {
+        throw new Error('Please provide some responses before saving');
+      }
+
+      await db.saveUserInformation(mergedData);
+      setSaveStatus('success');
+
+      if (appendSuccessMessage) {
+        const successMessage = {
+          id: messageIdCounter,
+          text: "Perfect! Your information has been saved. Based on your responses, I can help you explore career paths that align with your interests, experience, and goals. Would you like me to provide some personalized career recommendations?",
+          sender: "assistant",
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, successMessage]);
+        setMessageIdCounter(prev => prev + 1);
+      }
+    } catch (error) {
+      setSaveStatus('error');
+      let errorText = "I encountered an issue saving your information. ";
+      if (error.message.includes('User must be logged in')) {
+        errorText += "Please make sure you're logged in and try again.";
+      } else if (error.message.includes('Please provide some responses')) {
+        errorText += "Please answer at least one question before saving.";
+      } else {
+        errorText += `Error: ${error.message}. Please try again or contact support if the problem persists.`;
+      }
+      const errorMessage = {
+        id: messageIdCounter,
+        text: errorText,
+        sender: "assistant",
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      setMessageIdCounter(prev => prev + 1);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Modified compileCategoryResponses to accept responses as argument and return {question: answer} format
+  const compileCategoryResponses = (categoryName, responsesObj = userResponses) => {
+    const categoryKey = categoryName.toLowerCase().replace(/[^a-z]/g, '_');
+    const responseObj = {};
+    const category = categories.find(cat => cat.name === categoryName);
+    if (!category) return {};
+    for (let i = 1; i <= category.questions.length; i++) {
+      const questionKey = `${categoryKey}_q${i}`;
+      if (responsesObj[questionKey] && responsesObj[questionKey] !== '[SKIPPED]') {
+        const question = category.questions[i - 1];
+        const answer = responsesObj[questionKey];
+        responseObj[question] = answer;
+      }
+    }
+    return responseObj;
+  };
+
+  // Function to merge new responses with existing ones, checking for duplicates
+  const mergeResponsesWithExisting = async (newUserResponses) => {
+    try {
+      // Get existing user information from database
+      const existingData = await db.getUserInformation(user?.email || user?.id);
+      const mergedData = {
+        user_id: user?.email || user?.id,
+        username: user?.email || user?.id
+      };
+      
+      // Process each category
+      categories.forEach(category => {
+        const categoryName = category.name;
+        const newCategoryResponses = compileCategoryResponses(categoryName, newUserResponses);
+        
+        // Parse existing responses if they exist
+        let existingCategoryResponses = {};
+        if (existingData && existingData[categoryName]) {
+          try {
+            // Try parsing as JSON first (new format)
+            existingCategoryResponses = typeof existingData[categoryName] === 'string' 
+              ? JSON.parse(existingData[categoryName]) 
+              : existingData[categoryName];
+          } catch {
+            // If parsing fails, it might be in old format, convert it to empty object
+            existingCategoryResponses = {};
+          }
+        }
+        
+        // Merge responses, with new responses overriding existing ones
+        const mergedCategoryResponses = {
+          ...existingCategoryResponses,
+          ...newCategoryResponses
+        };
+        
+        // Store as JSON string
+        mergedData[categoryName] = JSON.stringify(mergedCategoryResponses);
+      });
+      
+      return mergedData;
+    } catch (error) {
+      console.error('Error merging responses:', error);
+      // Fallback: just use new responses in JSON format
+      const fallbackData = {
+        user_id: user?.email || user?.id,
+        username: user?.email || user?.id
+      };
+      categories.forEach(category => {
+        const categoryName = category.name;
+        const categoryResponses = compileCategoryResponses(categoryName, newUserResponses);
+        fallbackData[categoryName] = JSON.stringify(categoryResponses);
+      });
+      return fallbackData;
+    }
+  };
+
+  // Save after each question
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!inputMessage.trim()) return;
@@ -133,7 +254,7 @@ const Chat = () => {
       id: messageIdCounter,
       text: inputMessage,
       sender: "user",
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       category: categories[currentCategory].name,
       questionIndex: currentQuestionIndex
     };
@@ -144,260 +265,184 @@ const Chat = () => {
 
     // Check if this is the first user message (no questions asked yet)
     if (messages.length === 1) {
-      // This is the first user message, ask the first question
       setTimeout(() => {
         const category = categories[currentCategory];
         const question = category.questions[currentQuestionIndex];
-        
         const questionMessage = {
           id: messageIdCounter + 1,
           text: question,
           sender: "assistant",
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           category: category.name,
           questionIndex: currentQuestionIndex
         };
-        
         setMessages(prev => [...prev, questionMessage]);
         setMessageIdCounter(prev => prev + 1);
       }, 1000);
-      return; // Exit early, don't process as a response
+      return;
     }
 
-    // Save user response
+    // Save user response in state and then persist
     const categoryName = categories[currentCategory].name;
     const questionKey = `${categoryName.toLowerCase().replace(/[^a-z]/g, '_')}_q${currentQuestionIndex + 1}`;
-    
-    setUserResponses(prev => ({
-      ...prev,
+    const newResponses = {
+      ...userResponses,
       [questionKey]: inputMessage
-    }));
+    };
+    setUserResponses(newResponses);
+
+    // Save to backend after each question
+    await saveUserInformation(newResponses);
 
     // Move to next question or category
     if (currentQuestionIndex < categories[currentCategory].questions.length - 1) {
-      // Move to next question in same category
+      // Next question in same category
       const nextQuestionIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextQuestionIndex);
-      
+
       setTimeout(() => {
         const category = categories[currentCategory];
         const question = category.questions[nextQuestionIndex];
-        
         const questionMessage = {
           id: messageIdCounter + 1,
           text: question,
           sender: "assistant",
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           category: category.name,
           questionIndex: nextQuestionIndex
         };
-        
         setMessages(prev => [...prev, questionMessage]);
         setMessageIdCounter(prev => prev + 1);
       }, 1000);
-      
+
     } else {
       // Move to next category
       if (currentCategory < categories.length - 1) {
         const nextCategory = currentCategory + 1;
         setCurrentCategory(nextCategory);
         setCurrentQuestionIndex(0);
-        
+
         const categoryTransitionMessage = {
           id: messageIdCounter + 1,
           text: `Great! Now let's move on to ${categories[nextCategory].name}.`,
           sender: "assistant",
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           category: categories[nextCategory].name
         };
-        
         setMessages(prev => [...prev, categoryTransitionMessage]);
         setMessageIdCounter(prev => prev + 1);
-        
+
         setTimeout(() => {
           const category = categories[nextCategory];
           const question = category.questions[0];
-          
           const questionMessage = {
             id: messageIdCounter + 2,
             text: question,
             sender: "assistant",
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             category: category.name,
             questionIndex: 0
           };
-          
           setMessages(prev => [...prev, questionMessage]);
           setMessageIdCounter(prev => prev + 1);
         }, 1000);
-        
+
       } else {
         // All questions completed
         const completionMessage = {
           id: messageIdCounter + 1,
           text: "Excellent! I've gathered all the information I need. Let me save your responses and provide you with some personalized career insights.",
           sender: "assistant",
-          timestamp: new Date()
+          timestamp: new Date().toISOString()
         };
-        
         setMessages(prev => [...prev, completionMessage]);
         setMessageIdCounter(prev => prev + 1);
-        await saveUserInformation();
+
+        // Save one last time and append success message
+        await saveUserInformation(newResponses, true);
       }
     }
   };
 
-  // Handle skipping a question
-  const handleSkipQuestion = () => {
-    // Save empty response for current question
+  // Save after each skip
+  const handleSkipQuestion = async () => {
     const categoryName = categories[currentCategory].name;
     const questionKey = `${categoryName.toLowerCase().replace(/[^a-z]/g, '_')}_q${currentQuestionIndex + 1}`;
-    
-    setUserResponses(prev => ({
-      ...prev,
+    const newResponses = {
+      ...userResponses,
       [questionKey]: '[SKIPPED]'
-    }));
+    };
+    setUserResponses(newResponses);
 
-    // Move to next question or category (same logic as handleSendMessage)
+    // Save to backend after each skip
+    await saveUserInformation(newResponses);
+
+    // Move to next question or category
     if (currentQuestionIndex < categories[currentCategory].questions.length - 1) {
-      // Move to next question in same category
       const nextQuestionIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextQuestionIndex);
-      
+
       setTimeout(() => {
         const category = categories[currentCategory];
         const question = category.questions[nextQuestionIndex];
-        
         const questionMessage = {
           id: messageIdCounter + 1,
           text: question,
           sender: "assistant",
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           category: category.name,
           questionIndex: nextQuestionIndex
         };
-        
         setMessages(prev => [...prev, questionMessage]);
         setMessageIdCounter(prev => prev + 1);
       }, 1000);
-      
+
     } else {
-      // Move to next category
       if (currentCategory < categories.length - 1) {
         const nextCategory = currentCategory + 1;
         setCurrentCategory(nextCategory);
         setCurrentQuestionIndex(0);
-        
+
         const categoryTransitionMessage = {
           id: messageIdCounter + 1,
           text: `Great! Now let's move on to ${categories[nextCategory].name}.`,
           sender: "assistant",
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           category: categories[nextCategory].name
         };
-        
         setMessages(prev => [...prev, categoryTransitionMessage]);
         setMessageIdCounter(prev => prev + 1);
-        
+
         setTimeout(() => {
           const category = categories[nextCategory];
           const question = category.questions[0];
-          
           const questionMessage = {
             id: messageIdCounter + 2,
             text: question,
             sender: "assistant",
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             category: category.name,
             questionIndex: 0
           };
-          
           setMessages(prev => [...prev, questionMessage]);
           setMessageIdCounter(prev => prev + 1);
         }, 1000);
-        
+
       } else {
         // All questions completed
         const completionMessage = {
           id: messageIdCounter + 1,
           text: "Excellent! I've gathered all the information I need. Let me save your responses and provide you with some personalized career insights.",
           sender: "assistant",
-          timestamp: new Date()
+          timestamp: new Date().toISOString()
         };
-        
         setMessages(prev => [...prev, completionMessage]);
         setMessageIdCounter(prev => prev + 1);
-        saveUserInformation();
+
+        // Save one last time and append success message
+        await saveUserInformation(newResponses, true);
       }
     }
-  };
-
-  const saveUserInformation = async () => {
-    setIsSaving(true);
-    setSaveStatus('saving');
-    
-    try {
-      // Compile responses into the format expected by your table
-      const userData = {
-        user_id: user?.id, // Supabase user ID
-        username: user?.email || 'Anonymous',
-        "Interests + Values": compileCategoryResponses('Interests + Values'),
-        "Work Experience": compileCategoryResponses('Work Experience'),
-        "Circumstances": compileCategoryResponses('Circumstances'),
-        "Skills": compileCategoryResponses('Skills'),
-        "Goals": compileCategoryResponses('Goals')
-      };
-
-      await db.saveUserInformation(userData);
-      
-      setSaveStatus('success');
-      
-      const successMessage = {
-        id: messageIdCounter,
-        text: "Perfect! Your information has been saved. Based on your responses, I can help you explore career paths that align with your interests, experience, and goals. Would you like me to provide some personalized career recommendations?",
-        sender: "assistant",
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, successMessage]);
-      setMessageIdCounter(prev => prev + 1);
-      
-    } catch (error) {
-      setSaveStatus('error');
-      
-      const errorMessage = {
-        id: messageIdCounter,
-        text: `I encountered an issue saving your information: ${error.message}. Please try again or contact support if the problem persists.`,
-        sender: "assistant",
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
-      setMessageIdCounter(prev => prev + 1);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const compileCategoryResponses = (categoryName) => {
-    const categoryKey = categoryName.toLowerCase().replace(/[^a-z]/g, '_');
-    const responses = [];
-    
-    // Find the category to get the actual number of questions
-    const category = categories.find(cat => cat.name === categoryName);
-    if (!category) return '';
-    
-    // Loop through the actual number of questions in this category
-    for (let i = 1; i <= category.questions.length; i++) {
-      const questionKey = `${categoryKey}_q${i}`;
-      if (userResponses[questionKey]) {
-        const question = category.questions[i - 1]; // Get the actual question text
-        const answer = userResponses[questionKey];
-        responses.push(`${question}: ${answer}`);
-      }
-    }
-    
-    return responses.join(' || ');
   };
 
   const getProgressPercentage = () => {
@@ -562,7 +607,7 @@ const Chat = () => {
                             opacity: 0.7
                           }}
                         >
-                          {message.timestamp.toLocaleTimeString()}
+                          {new Date(message.timestamp).toLocaleTimeString()}
                         </Typography>
                       </Paper>
                     </Box>

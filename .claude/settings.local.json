@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(npm test:*)"
     ],
     "deny": []
   }

@@ -9,6 +9,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Utility function for standardized timestamp creation (ISO 8601 with UTC)
+export const getCurrentTimestamp = () => {
+  return new Date().toISOString()
+}
+
 // Helper functions for common operations
 export const auth = {
   // Get current user
@@ -48,16 +53,69 @@ export const db = {
 
   // Create or update user information
   saveUserInformation: async (userData) => {
-    const { data, error } = await supabase
-      .from('User Information')
-      .upsert([userData], { 
-        onConflict: 'user_id'
-      })
-      .select()
-      .single()
+    console.log("Saving user data:", userData)
     
-    if (error) throw error
-    return data
+    // Validate required fields
+    if (!userData.user_id) {
+      throw new Error('user_id is required for saving user information')
+    }
+
+    try {
+      // Add timestamp to userData
+      const timestampedUserData = {
+        ...userData,
+        last_updated: getCurrentTimestamp()
+      };
+      
+      // First, check if user already exists
+      const { data: existingData } = await supabase
+        .from('User Information')
+        .select('*')
+        .eq('user_id', userData.user_id)
+        .single()
+      
+      let result;
+      
+      if (existingData) {
+        // User exists, update the record
+        const { data, error } = await supabase
+          .from('User Information')
+          .update(timestampedUserData)
+          .eq('user_id', userData.user_id)
+          .select()
+        
+        if (error) {
+          console.error('Supabase update error:', error)
+          throw error
+        }
+        
+        result = data && data.length > 0 ? data[0] : data
+      } else {
+        // User doesn't exist, insert new record (also add created_at timestamp)
+        const newUserData = {
+          ...timestampedUserData,
+          created_at: getCurrentTimestamp()
+        };
+        
+        const { data, error } = await supabase
+          .from('User Information')
+          .insert([newUserData])
+          .select()
+        
+        if (error) {
+          console.error('Supabase insert error:', error)
+          throw error
+        }
+        
+        result = data && data.length > 0 ? data[0] : data
+      }
+      
+      console.log("Successfully saved user data:", result)
+      return result
+    } catch (err) {
+      console.error('Error in saveUserInformation:', err)
+      throw err
+    }
   },
 
   // Get chat messages
@@ -114,7 +172,7 @@ export const db = {
         user_id: userId,
         path_id: pathId,
         progress: progress,
-        updated_at: new Date().toISOString()
+        updated_at: getCurrentTimestamp()
       })
       .select()
       .single()

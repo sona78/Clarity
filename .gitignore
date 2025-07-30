@@ -5,3 +5,4 @@ llm_planner/env.yaml
 .vercel
 /api/.claude
 api/env.yaml
+.claude/settings.local.json

@@ -19,15 +19,17 @@
       "dest": "/api/index.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg))",
       "dest": "/frontend/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
     }
-  ],
-  "outputDirectory": "frontend/build",
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && CI=false npm run build",
-  "env": {
-    "CI": "false"
-  }
+  ]
 }
   

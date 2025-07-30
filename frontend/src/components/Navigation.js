@@ -16,7 +16,7 @@ import {
   Logout,
   AccountCircle
 } from '@mui/icons-material';
-import { HOME_ROUTE } from "../App";
+import { CHAT_ROUTE, HOME_ROUTE, PATHS_ROUTE } from "../App";
 
 const Navigation = () => {
   const { 
@@ -54,6 +54,12 @@ const Navigation = () => {
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <Button color="primary" component={Link} to={HOME_ROUTE} sx={{ fontWeight: 500 }}>
             Home
+          </Button>
+          <Button color="primary" component={Link} to={CHAT_ROUTE} sx={{ fontWeight: 500 }}>
+            Chat
+          </Button>
+          <Button color="primary" component={Link} to={PATHS_ROUTE} sx={{ fontWeight: 500 }}>
+            Paths
           </Button>
           
           {!loading && (
