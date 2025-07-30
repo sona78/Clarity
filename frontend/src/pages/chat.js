@@ -193,10 +193,10 @@ const Chat = () => {
   const mergeResponsesWithExisting = async (newUserResponses) => {
     try {
       // Get existing user information from database
-      const existingData = await db.getUserInformation(user?.email || user?.id);
+      const existingData = await db.getUserInformation(user?.id);
       const mergedData = {
-        user_id: user?.email || user?.id,
-        username: user?.email || user?.id
+        user_id: user?.id,
+        username: user?.email
       };
       
       // Process each category
