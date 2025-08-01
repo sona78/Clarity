@@ -1,11 +1,10 @@
 from typing import Dict, List, Any, Optional
 import json
 from datetime import datetime, timedelta
-from exa_py import Exa
 from db import getUserInformationFromDB, storeUserPlanInDB
 from models.milestone import *
 from models.user import *
-from clients import openai_client
+from clients import openai_client, exa_client
 from prompts import create_career_plan_prompt
 from utils.timestamp_utils import get_current_timestamp
 
@@ -26,7 +25,7 @@ class CascadingPlanManager:
             response = openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are an expert career strategist. Generate comprehensive career transition plans with cascading milestone dependencies."},
+                    {"role": "system", "content": "You are an expert career strategist. Generate comprehensive career transition plans with cascading milestone dependencies. Make your recommendations extremely specific to the user's profile and mention specific details in relation to your recommendations when appropriate"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -34,10 +33,49 @@ class CascadingPlanManager:
             )
             
             llm_response = response.choices[0].message.content
-            return self.parse_comprehensive_plan(llm_response, user_profile)
+            career_plan_llm = self.parse_comprehensive_plan(llm_response, user_profile)
+
+            return career_plan_llm
             
         except Exception as e:
             raise Exception(f"LLM generation failed: {e}")
+
+    def _run_exa_research(self, milestone, milestone_name, num_results=5, category=None, contents=None):
+        if milestone:
+            query = getattr(milestone.details, "exa_research_query", None)
+            if query:
+                try:
+                    kwargs = {
+                        "query": query,
+                        "num_results": num_results,
+                        "category": category
+                    }
+                    if contents is not None:
+                        kwargs["contents"] = contents
+                    # Remove None values to avoid passing them as arguments
+                    kwargs = {k: v for k, v in kwargs.items() if v is not None}
+                    results = exa_client.search(**kwargs)
+                    milestone.details.exa_research = results.get("results", [])
+                except Exception as e:
+                    print(f"Exa research failed for {milestone_name}: {e}")
+
+    def research_milestone_exa_topics(self, plan: CareerPlan):
+        self._run_exa_research(plan.milestone_1, "milestone_1")
+        self._run_exa_research(plan.milestone_2, "milestone_2")
+        self._run_exa_research(plan.milestone_3, "milestone_3", category="news", contents={
+            "highlights": {
+                "numSentences": 3,
+                "highlightsPerUrl": 2
+            }
+        })
+        self._run_exa_research(plan.milestone_4, "milestone_4", category="research paper", contents={
+            "highlights": {
+                "numSentences": 3,
+                "highlightsPerUrl": 2
+            }
+        })
+
+
     
     def process_user_thoughts_to_updates(self, plan: CareerPlan, milestone_timeframe: str, user_thoughts: str, context: str = "") -> MilestoneUpdate:
         """Process user's natural language thoughts into structured milestone updates"""

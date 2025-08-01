@@ -25,8 +25,8 @@ class BaseMilestoneDetail(BaseModel):
     resources: List[Dict[str, str]]
     potential_challenges: List[str]
     dependencies: List[str] = Field(default=[], description="Dependencies on previous milestones")
-    budget_estimate: Optional[float] = Field(default=0.0, description="Estimated cost for milestone")
-    exa_research_topics: List[str] = Field(default=[], description="Topics for additional research")
+    exa_research_query: str = Field(default="", description="Topics for additional research")
+    exa_research: List[Dict[str, Any]] = Field(default=[], description="Results or links from Exa research")
     user_notes: str = Field(default="", description="User-added information")
     priority_level: str = Field(default="medium", description="Priority level")
     last_updated: str

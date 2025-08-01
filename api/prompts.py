@@ -47,8 +47,7 @@ def create_career_plan_prompt(user_profile: UserProfile) -> str:
                     "resources": [{{"name": "resource", "url": "url", "type": "course"}}],
                     "potential_challenges": ["challenge1", "challenge2"],
                     "dependencies": [],
-                    "budget_estimate": 0.0,
-                    "exa_research_topics": ["topic1", "topic2"]
+                    "exa_research_query": "Roles that a user can immediately apply to"
                 }}
             }},
             "3_months": {{
@@ -62,8 +61,7 @@ def create_career_plan_prompt(user_profile: UserProfile) -> str:
                     "resources": [{{"name": "resource", "url": "url", "type": "certification"}}],
                     "potential_challenges": ["challenge1", "challenge2"],
                     "dependencies": ["Complete 1_month foundation"],
-                    "budget_estimate": 200.0,
-                    "exa_research_topics": ["topic1", "topic2"]
+                    "exa_research_query": "Certifications or skills a user can learn"
                 }}
             }},
             "1_year": {{
@@ -77,8 +75,7 @@ def create_career_plan_prompt(user_profile: UserProfile) -> str:
                     "resources": [{{"name": "resource", "url": "url", "type": "experience"}}],
                     "potential_challenges": ["challenge1", "challenge2"],
                     "dependencies": ["Complete 3_months development"],
-                    "budget_estimate": 500.0,
-                    "exa_research_topics": ["topic1", "topic2"]
+                    "exa_research_query": "Specific topics for learning about a user's industry"
                 }}
             }},
             "5_years": {{
@@ -92,8 +89,7 @@ def create_career_plan_prompt(user_profile: UserProfile) -> str:
                     "resources": [{{"name": "resource", "url": "url", "type": "leadership"}}],
                     "potential_challenges": ["challenge1", "challenge2"],
                     "dependencies": ["Complete 1_year implementation"],
-                    "budget_estimate": 1000.0,
-                    "exa_research_topics": ["topic1", "topic2"]
+                    "exa_research_query": "Predictions of the future of a user's field"
                 }}
             }}
         }}

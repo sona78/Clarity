@@ -38,7 +38,8 @@ import Navigation from '../components/Navigation';
 import PageNavigation from '../components/PageNavigation';
 import { CHAT_ROUTE } from "../App";
 import ReactMarkdown from 'react-markdown';
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase';
+import { API_ENDPOINTS } from '../config/api';
 
 const Paths = () => {
   const [selectedStep, setSelectedStep] = useState(null);
@@ -164,7 +165,7 @@ const Paths = () => {
     setError(null);
 
     try {
-      await fetch(`http://localhost:8000/api/v3/generate-plan/${encodeURIComponent(userEmail)}`, {
+      await fetch(API_ENDPOINTS.generatePlan(userEmail), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +208,7 @@ const Paths = () => {
       const timeframe = getTimeframeFromStep(selectedStepForCascade);
       
       const response = await fetch(
-        `http://localhost:8000/api/v3/milestone/${timeframe}/${encodeURIComponent(userEmail)}/update-cascade`,
+        API_ENDPOINTS.updateCascade(timeframe, userEmail),
         {
           method: 'PUT',
           headers: {

@@ -1,10 +1,19 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(taskkill:*)",
       "Bash(find:*)",
       "Bash(rg:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(vercel:*)",
+      "WebFetch(domain:clarity-jakl1ct0b-sona78s-projects.vercel.app)",
+      "WebFetch(domain:clarity-ljqlrcg4d-sona78s-projects.vercel.app)",
+      "WebFetch(domain:clarity-qewy0rb5r-sona78s-projects.vercel.app)",
+      "WebFetch(domain:clarity-r1zlfbrr6-sona78s-projects.vercel.app)",
+      "WebFetch(domain:clarity-dza7ilyhe-sona78s-projects.vercel.app)",
+      "Bash(curl:*)",
+      "Bash(python:*)"
     ],
     "deny": []
   }
